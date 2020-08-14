@@ -8,7 +8,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "test": "yarn lint"
   },
   "engines": {
     "coc": "^0.0.77"
