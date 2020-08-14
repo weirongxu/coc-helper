@@ -273,12 +273,15 @@ export const floatingModule = VimModule.create('float', (m) => {
     `,
   );
 
-  const nvimBorderRender = m.fn<[number, NvimWinConfig], void>(
+  const nvimBorderRender = m.fn<
+    [number, floatingModule.OpenOptions, NvimWinConfig],
+    void
+  >(
     'nvim_border_render',
     ({ name }) => `
-      function! ${name}(bufnr, options) abort
-        let repeat_width = a:options.width - 2
-        let repeat_height = a:options.height - 2
+      function! ${name}(bufnr, options, win_options) abort
+        let repeat_width = a:win_options.width - 2
+        let repeat_height = a:win_options.height - 2
         let title = get(a:options, 'title', '')
         let title_width = strdisplaywidth(title)
 
@@ -355,7 +358,7 @@ export const floatingModule = VimModule.create('float', (m) => {
 
               if has_key(a:options, 'border') && border_bufnr isnot v:null
                 let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, border_win_config)
+                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
                 let border_winid = nvim_open_win(border_bufnr, v:false, border_win_config)
                 call ${nvimWinhl.name}(border_winid, get(a:options, 'border_winhl', v:null), get(a:options, 'border_winhlNC', v:null))
                 call ${initExecute.name}({'bufnr': border_bufnr, 'winid': border_winid}, get(a:options, 'border_inited_execute', ''))
@@ -405,7 +408,7 @@ export const floatingModule = VimModule.create('float', (m) => {
               let border_winid = v:null
               if has_key(a:options, 'border') && border_bufnr isnot v:null
                 let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, border_win_config)
+                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
                 let border_winid = nvim_open_win(border_bufnr, v:false, border_win_config)
               endif
               let winid = nvim_open_win(a:bufnr, v:true, win_config)
@@ -430,7 +433,7 @@ export const floatingModule = VimModule.create('float', (m) => {
               if has_key(a:options, 'border') && border_bufnr isnot v:null
                 let border_winid = bufwinid(border_bufnr)
                 let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, border_win_config)
+                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
                 call nvim_win_set_config(border_winid, border_win_config)
               endif
               let winid = bufwinid(a:bufnr)
