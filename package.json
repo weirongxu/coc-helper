@@ -3,7 +3,7 @@
   "version": "0.0.7",
   "description": "Helpers for coc.nvim",
   "main": "lib/src/index.js",
-  "repository": "git@github.com:weirongxu/coc-floatinput.git",
+  "repository": "git@github.com:weirongxu/coc-helper.git",
   "author": "Weirong Xu <weirongxu.raidou@gmail.com>",
   "license": "MIT",
   "files": [
