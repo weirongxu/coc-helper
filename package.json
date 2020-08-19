@@ -12,6 +12,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint src --ext ts",
+    "prepare": "yarn build",
     "test": "yarn lint"
   },
   "engines": {
