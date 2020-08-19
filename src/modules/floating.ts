@@ -112,7 +112,6 @@ export const floatingModule = VimModule.create('float', (m) => {
         let columns = &columns
         let lines = &lines - &cmdheight - 1
         let [top, left] = ${utilModule.globalCursorPosition.inline()}
-        echom a:size
         let [width, height] = a:size
         if top + height >= lines
           let top -= height
@@ -329,9 +328,6 @@ export const floatingModule = VimModule.create('float', (m) => {
           let pad_box[0] = cur_pos[0]
           let pad_box[1] = cur_pos[1]
         endif
-
-        echom cont_box
-        echom br_box
 
         let content = {
           \\ 'relative': 'editor',
