@@ -2,6 +2,7 @@ import { BufferHighlight } from '@chemzqm/neovim';
 import { workspace } from 'coc.nvim';
 import { VimModule } from '../VimModule';
 import { bufModule } from './buf';
+import { utilModule } from './util';
 
 export namespace floatingModule {
   export type Mode = 'default' | 'base' | 'show';
@@ -27,7 +28,7 @@ export namespace floatingModule {
      * Relative position, not support the 'win' in vim
      * @default 'editor'
      */
-    relative?: 'center' | 'cursor' | 'win' | 'editor';
+    relative?: 'center' | 'cursor' | 'cursor-around' | 'win' | 'editor';
     width: number;
     height: number;
     /**
@@ -48,7 +49,7 @@ export namespace floatingModule {
      * order is above/right/below/left.
      * Use empty list to enable all
      */
-    border?: boolean[];
+    border?: number[];
     /**
      * Border chars for floating window, their order is top/right/bottom/left/topleft/topright/botright/botleft
      */
@@ -62,6 +63,9 @@ export namespace floatingModule {
      */
     title?: string;
     filetype?: string;
+    /**
+     * neovim only
+     */
     focus?: boolean;
     lines?: string[];
     highlights?: BufferHighlight[];
@@ -82,20 +86,98 @@ export namespace floatingModule {
 const isNvim = workspace.isNvim;
 
 export const floatingModule = VimModule.create('float', (m) => {
-  const getCenterPosition = m.fn<
-    [floatingModule.OpenOptions],
-    [number, number]
-  >(
-    'get_center_position',
+  type Edges = [number, number, number, number];
+  type Box = [number, number, number, number];
+  type Pos = [number, number];
+  type Size = [number, number];
+
+  const getCenterPos = m.fn<[Box], Pos>(
+    'get_center_pos',
     ({ name }) => `
-      function ${name}(options) abort
+      function ${name}(box) abort
         let columns = &columns
         let lines = &lines - &cmdheight - 1
-        let width = a:options.width
-        let height = a:options.height
+        let [_, _, width, height] = a:box
         let top = (lines - height) / 2
         let left = (columns - width) / 2
         return [top, left]
+      endfunction
+    `,
+  );
+
+  const getPosForAround = m.fn<[Size], Pos>(
+    'get_pos_for_around',
+    ({ name }) => `
+      function! ${name}(size)
+        let columns = &columns
+        let lines = &lines - &cmdheight - 1
+        let [top, left] = ${utilModule.globalCursorPosition.inline()}
+        echom a:size
+        let [width, height] = a:size
+        if top + height >= lines
+          let top -= height
+        else
+          let top += 1
+        endif
+        if left + width >= columns
+          let left -= width
+        else
+          let left += 1
+        endif
+        return [top, left]
+      endfunction
+    `,
+  );
+
+  /**
+   * Extend around number to 4
+   * @return [top, right, down, left]
+   */
+  const extendEdges: VimModule.FnCaller<number[], Edges> = m.fn<[any], any>(
+    'extend_edges',
+    ({ name }) => `
+      function! ${name}(edges) abort
+        let len = len(a:edges)
+        let top = a:edges[0]
+        let right = top
+        if len >= 2
+          let right = a:edges[1]
+        endif
+        let down = top
+        if len >= 3
+          let down = a:edges[2]
+        endif
+        let left = right
+        if len >= 4
+          let left = a:edges[3]
+        endif
+        return [top, right, down, left]
+      endfunction
+    `,
+  );
+
+  /**
+   * Change window box by around edges
+   * @argument [top, left, width, height], number[]
+   * @return [top, left, width, height]
+   */
+  const changeBoxByEdges = m.fn<[Box, number[]], Box>(
+    'change_box_by_edges',
+    ({ name }) => `
+      function! ${name}(box, edges) abort
+        if len(a:edges)
+          let [w_top, w_right, w_down, w_left] = ${extendEdges.inline(
+            'a:edges',
+          )}
+        else
+          let [w_top, w_right, w_down, w_left] = [1, 1, 1, 1]
+        endif
+        let [top, left, width, height] = a:box
+        let top -= w_top
+        let left -= w_left
+        let width += w_left + w_right
+        let height += w_top + w_down
+        return [top, left, width, height]
       endfunction
     `,
   );
@@ -109,7 +191,7 @@ export const floatingModule = VimModule.create('float', (m) => {
       maxheight: number;
       highlight: string;
       padding?: number[];
-      border?: boolean[];
+      border?: number[];
       borderchars?: string[];
       close?: 'button' | 'click' | 'none';
       borderhighlight?: string;
@@ -118,29 +200,52 @@ export const floatingModule = VimModule.create('float', (m) => {
     'vim_win_config',
     ({ name }) => `
       function! ${name}(options) abort
+        let [top, left, width, height] = [a:options.top, a:options.left, a:options.width, a:options.height]
         if a:options.relative == 'center'
-          let [top, left] = ${getCenterPosition.name}(a:options)
+          let config = {
+            \\ 'pos': 'center',
+            \\ }
         else
-          let top = a:options.top
-          let left = a:options.left
+          if a:options.relative == 'cursor-around'
+            let box = [top, left, width, height]
+            if has_key(a:options, 'padding')
+              let box = ${changeBoxByEdges.inline('box, a:options.padding')}
+            endif
+            if has_key(a:options, 'border')
+              let box = ${changeBoxByEdges.inline('box, a:options.border')}
+            endif
+            let [top, left] = ${getPosForAround.inline('[box[2], box[3]]')}
+            let a:options.relative = 'editor'
+          endif
           if a:options.relative == 'cursor'
             if top >= 0
-              let top = 'cursor+' . (top + 1)
+              let top = 'cursor+' . top
             else
               let top = 'cursor' . top
             endif
+            if left >= 0
+              let left = 'cursor+' . left
+            else
+              let left = 'cursor' . left
+            endif
           else
-            let top = top + 1
-            let left = left + 1
+            let top += 1
+            let left += 1
           endif
+          let config = {
+                \\ 'line': top,
+                \\ 'col': left,
+                \\ }
         endif
-        let config = {
-              \\ 'line': top,
-              \\ 'col': left,
-              \\ 'maxwidth': a:options.width,
-              \\ 'maxheight': a:options.height,
-              \\ 'highlight': get(a:options, 'winhl'),
-              \\ }
+        let config.minwidth = width
+        let config.minheight = height
+        let config.highlight = get(a:options, 'winhl')
+        if has_key(a:options, 'title')
+          let config.title = a:options.title
+        endif
+        if has_key(a:options, 'padding')
+          let config.padding = a:options.padding
+        endif
         if has_key(a:options, 'border')
           let config.border = a:options.border
           let config.close = 'button'
@@ -156,63 +261,6 @@ export const floatingModule = VimModule.create('float', (m) => {
     `,
   );
 
-  type AroundWidth<T> = [T, T, T, T];
-  /**
-   * Extend around number to 4
-   * @return [top, right, down, left]
-   */
-  const nvimExtendAroundWidth:
-    | VimModule.FnCaller<boolean[], AroundWidth<boolean>>
-    | VimModule.FnCaller<number[], AroundWidth<boolean>> = m.fn<[any], any>(
-    'nvim_extend_around_width',
-    ({ name }) => `
-      function! ${name}(widths) abort
-        let len = len(a:widths)
-        let top = a:widths[0]
-        let right = top
-        if len >= 2
-          let right = a:widths[1]
-        endif
-        let down = top
-        if len >= 3
-          let down = a:widths[2]
-        endif
-        let left = right
-        if len >= 4
-          let left = a:widths[3]
-        endif
-        return [top, right, down, left]
-      endfunction
-    `,
-  );
-
-  /**
-   * Change window size by around width
-   * argument [top, left, width, height]
-   * @return [top, left, width, height]
-   */
-  const nvimSizeWithAroundWidth = m.fn<
-    [(number | boolean)[], AroundWidth<number>],
-    AroundWidth<number>[]
-  >(
-    'nvim_size_around_width',
-    ({ name }) => `
-      function! ${name}(widths, size) abort
-        if len(a:widths)
-          let [w_top, w_right, w_down, w_left] = ${nvimExtendAroundWidth.name}(a:widths)
-        else
-          let [w_top, w_right, w_down, w_left] = [1, 1, 1, 1]
-        endif
-        let [top, left, width, height] = a:size
-        let top -= w_top
-        let left -= w_left
-        let width += w_left + w_right
-        let height += w_top + w_down
-        return [top, left, width, height]
-      endfunction
-    `,
-  );
-
   type NvimWinConfig = {
     relative: string;
     row: number;
@@ -221,45 +269,104 @@ export const floatingModule = VimModule.create('float', (m) => {
     height: number;
   };
   const nvimWinConfig = m.fn<
-    [floatingModule.OpenOptions, 'win' | 'border' | 'padding'],
-    NvimWinConfig
+    [floatingModule.OpenOptions],
+    {
+      border: NvimWinConfig | null;
+      padding: NvimWinConfig | null;
+      content: NvimWinConfig;
+    }
   >(
     'nvim_win_config',
     ({ name }) => `
-      function! ${name}(options, type) abort
-        let focusable = v:true
+      function! ${name}(options) abort
+        let title = get(a:options, 'title', '')
+        let width = max([a:options.width, strdisplaywidth(title)])
+        let full_box = [0, 0, width, a:options.height]
+        let cont_box = copy(full_box)
+        let pad_box = v:null
+        let br_box = v:null
+        if has_key(a:options, 'padding')
+          let pad_box = ${changeBoxByEdges.inline(
+            'full_box, a:options.padding',
+          )}
+          let full_box = copy(pad_box)
+        endif
+        if has_key(a:options, 'border')
+          let full_box = ${changeBoxByEdges.inline(
+            'full_box, a:options.border',
+          )}
+          let br_box = copy(full_box)
+        endif
+
         if a:options.relative == 'center'
-          let [top, left] = ${getCenterPosition.name}(a:options)
-          let relative = 'editor'
+          if br_box isnot v:null
+            let cur_pos = ${getCenterPos.inline('br_box')}
+          elseif pad_box isnot v:null
+            let cur_pos = ${getCenterPos.inline('pad_box')}
+          else
+            let cur_pos = ${getCenterPos.inline('cont_box')}
+          endif
+        elseif a:options.relative == 'cursor'
+          let cur_pos = ${utilModule.globalCursorPosition.inline()}
+        elseif a:options.relative == 'cursor-around'
+          let cur_pos = ${getPosForAround.inline('[full_box[2], full_box[3]]')}
         else
-          let top = a:options.top
-          let left = a:options.left
-          let relative = a:options.relative
+          let cur_pos = [a:options.top, a:options.left]
         endif
-        let size = [top, left, a:options.width, a:options.height]
-        if a:type == 'border'
-          let focusable = v:false
-          if has_key(a:options, 'padding')
-            let size = ${nvimSizeWithAroundWidth.name}(a:options.padding, size)
-          endif
-          if has_key(a:options, 'border')
-            let size = ${nvimSizeWithAroundWidth.name}(a:options.border, size)
-          endif
-        elseif a:type == 'padding'
-          let focusable = v:false
-          if has_key(a:options, 'padding')
-            let size = ${nvimSizeWithAroundWidth.name}(a:options.padding, size)
-          endif
+
+        let [cont_box[0], cont_box[1]] = [cur_pos[0], cur_pos[1]]
+        if br_box isnot v:null
+          let cont_box[0] -= br_box[0]
+          let cont_box[1] -= br_box[1]
+          let br_box[0] = cur_pos[0]
+          let br_box[1] = cur_pos[1]
+          let cur_pos[0] = cont_box[0]
+          let cur_pos[1] = cont_box[1]
         endif
-        let [top, left, width, height] = size
-        return {
-              \\ 'relative': relative,
-              \\ 'row': top,
-              \\ 'col': left,
-              \\ 'width': width,
-              \\ 'height': height,
-              \\ 'focusable': focusable,
-              \\ }
+        if pad_box isnot v:null
+          let cont_box[0] -= pad_box[0]
+          let cont_box[1] -= pad_box[1]
+          let pad_box[0] = cur_pos[0]
+          let pad_box[1] = cur_pos[1]
+        endif
+
+        echom cont_box
+        echom br_box
+
+        let content = {
+          \\ 'relative': 'editor',
+          \\ 'row': cont_box[0],
+          \\ 'col': cont_box[1],
+          \\ 'width': cont_box[2],
+          \\ 'height': cont_box[3],
+          \\ 'focusable': v:true,
+          \\ }
+        if pad_box isnot v:null
+          let padding = {
+            \\ 'relative': 'editor',
+            \\ 'row': pad_box[0],
+            \\ 'col': pad_box[1],
+            \\ 'width': pad_box[2],
+            \\ 'height': pad_box[3],
+            \\ 'focusable': v:false,
+            \\ }
+        else
+          let padding = v:null
+        endif
+        if br_box isnot v:null
+          let border = {
+            \\ 'relative': 'editor',
+            \\ 'row': br_box[0],
+            \\ 'col': br_box[1],
+            \\ 'width': br_box[2],
+            \\ 'height': br_box[3],
+            \\ 'focusable': v:false,
+            \\ }
+        else
+          let border = v:null
+        endif
+
+        return {"content": content, "padding": padding, "border": border}
       endfunction
   `,
   );
@@ -327,68 +434,91 @@ export const floatingModule = VimModule.create('float', (m) => {
               let name = get(a:options, 'name', '')
               let border_bufnr = nvim_create_buf(v:false, v:true)
               let padding_bufnr = nvim_create_buf(v:false, v:true)
-              let bufnr = ${bufModule.create.name}(name)
-              call ${initExecute.name}({'bufnr': bufnr}, get(a:options, 'inited_execute', ''))
-              call ${initExecute.name}({'bufnr': border_bufnr}, get(a:options, 'border_inited_execute', ''))
-              call ${initExecute.name}({'bufnr': padding_bufnr}, get(a:options, 'padding_inited_execute', ''))
+              let bufnr = ${bufModule.create.inline('name')}
+              call ${initExecute.inline(
+                "{'bufnr': bufnr}, get(a:options, 'inited_execute', '')",
+              )}
+              call ${initExecute.inline(
+                "{'bufnr': border_bufnr}, get(a:options, 'border_inited_execute', '')",
+              )}
+              call ${initExecute.inline(
+                "{'bufnr': padding_bufnr}, get(a:options, 'padding_inited_execute', '')",
+              )}
               return [bufnr, border_bufnr, padding_bufnr]
             endfunction
           `
         : `
             function! ${name}(options) abort
               let name = get(a:options, 'name', '')
-              let bufnr = ${bufModule.create.name}(name)
-              call ${initExecute.name}({'bufnr': bufnr}, get(a:options, 'inited_execute', ''))
+              let bufnr = ${bufModule.create.inline('name')}
+              call ${initExecute.inline(
+                "{'bufnr': bufnr}, get(a:options, 'inited_execute', '')",
+              )}
               return [bufnr, v:null]
             endfunction
           `,
     ),
-    open: m.fn<[number, floatingModule.OpenOptions], [number, number | null]>(
-      'open',
-      ({ name }) =>
-        isNvim
-          ? `
+    open: m.fn<
+      [number, floatingModule.OpenOptions],
+      [number, number | null, number | null]
+    >('open', ({ name }) =>
+      isNvim
+        ? `
             function! ${name}(bufnr, options) abort
-              let win_config = ${nvimWinConfig.name}(a:options, 'win')
+              let win_config_dict = ${nvimWinConfig.inline('a:options')}
               let border_winid = v:null
               let padding_winid = v:null
-              let focus = get(a:options, 'focus', v:true)
+              let focus = get(a:options, 'focus', v:false)
               let border_bufnr = get(a:options, 'border_bufnr', v:null)
               let padding_bufnr = get(a:options, 'padding_bufnr', v:null)
 
-              if has_key(a:options, 'border') && border_bufnr isnot v:null
-                let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
-                let border_winid = nvim_open_win(border_bufnr, v:false, border_win_config)
-                call ${nvimWinhl.name}(border_winid, get(a:options, 'border_winhl', v:null), get(a:options, 'border_winhlNC', v:null))
-                call ${initExecute.name}({'bufnr': border_bufnr, 'winid': border_winid}, get(a:options, 'border_inited_execute', ''))
-                call setbufvar(border_bufnr, '&filetype', 'coc-helper-border')
-              endif
+              let winid = nvim_open_win(a:bufnr, focus, win_config_dict.content)
+              call ${nvimWinhl.inline(
+                "winid, get(a:options, 'winhl', v:null), get(a:options, 'winhlNC', v:null)",
+              )}
+              call ${initExecute.inline(
+                "{'bufnr': a:bufnr, 'winid': winid}, get(a:options, 'inited_execute', '')",
+              )}
 
-              if has_key(a:options, 'padding') && padding_bufnr isnot v:null
-                let padding_win_config = ${nvimWinConfig.name}(a:options, 'padding')
-                let padding_winid = nvim_open_win(padding_bufnr, v:true, padding_win_config)
-                call ${nvimWinhl.name}(padding_winid, get(a:options, 'winhl', v:null), get(a:options, 'winhlNC', v:null))
-                call ${initExecute.name}({'bufnr': padding_bufnr, 'winid': padding_winid}, get(a:options, 'padding_inited_execute', ''))
+              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
+                let padding_winid = nvim_open_win(padding_bufnr, v:true, win_config_dict.padding)
+                call ${nvimWinhl.inline(
+                  "padding_winid, get(a:options, 'winhl', v:null), get(a:options, 'winhlNC', v:null)",
+                )}
+                call ${initExecute.inline(
+                  "{'bufnr': padding_bufnr, 'winid': padding_winid}, get(a:options, 'padding_inited_execute', '')",
+                )}
                 call setbufvar(padding_bufnr, '&filetype', 'coc-helper-padding')
               endif
 
-              let winid = nvim_open_win(a:bufnr, focus, win_config)
-              call ${nvimWinhl.name}(winid, get(a:options, 'winhl', v:null), get(a:options, 'winhlNC', v:null))
-              call ${initExecute.name}({'bufnr': a:bufnr, 'winid': winid}, get(a:options, 'inited_execute', ''))
+              if win_config_dict.border isnot v:null && border_bufnr isnot v:null
+                call ${nvimBorderRender.inline(
+                  'border_bufnr, a:options, win_config_dict.border',
+                )}
+                let border_winid = nvim_open_win(border_bufnr, v:false, win_config_dict.border)
+                call ${nvimWinhl.inline(
+                  "border_winid, get(a:options, 'border_winhl', v:null), get(a:options, 'border_winhlNC', v:null)",
+                )}
+                call ${initExecute.inline(
+                  "{'bufnr': border_bufnr, 'winid': border_winid}, get(a:options, 'border_inited_execute', '')",
+                )}
+                call setbufvar(border_bufnr, '&filetype', 'coc-helper-border')
+              endif
 
               if has_key(a:options, 'filetype')
                 call setbufvar(a:bufnr, '&filetype', a:options.filetype)
               endif
 
-              return [winid, border_winid]
+              return [winid, border_winid, padding_winid]
             endfunction
           `
-          : `
+        : `
             function! ${name}(bufnr, options) abort
-              let win_config = ${vimWinConfig.name}(a:options)
+              let win_config = ${vimWinConfig.inline('a:options')}
               let winid = popup_create(a:bufnr, win_config)
-              call ${initExecute.name}({'bufnr': a:bufnr}, get(a:options, 'inited_execute', ''))
+              call ${initExecute.inline(
+                "{'bufnr': a:bufnr}, get(a:options, 'inited_execute', '')",
+              )}
               let filetype = get(a:options, 'filetype', v:null)
               if filetype != v:null
                 call setbufvar(a:bufnr, '&filetype', filetype)
@@ -397,51 +527,74 @@ export const floatingModule = VimModule.create('float', (m) => {
             endfunction
           `,
     ),
-    resume: m.fn<[number, floatingModule.OpenOptions], [number, number]>(
-      'resume',
-      ({ name }) =>
-        isNvim
-          ? `
+    resume: m.fn<
+      [number, floatingModule.OpenOptions],
+      [number, number | null, number | null]
+    >('resume', ({ name }) =>
+      isNvim
+        ? `
             function! ${name}(bufnr, options) abort
-              let win_config = ${nvimWinConfig.name}(a:options, 'win')
+              let win_config_dict = ${nvimWinConfig.inline('a:options')}
               let border_bufnr = get(a:options, 'border_bufnr', v:null)
+              let padding_bufnr = get(a:options, 'padding_bufnr', v:null)
               let border_winid = v:null
-              if has_key(a:options, 'border') && border_bufnr isnot v:null
-                let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
-                let border_winid = nvim_open_win(border_bufnr, v:false, border_win_config)
+              let padding_winid = v:null
+
+              let winid = nvim_open_win(a:bufnr, v:true, win_config_dict.content)
+
+              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
+                let padding_winid = nvim_open_win(padding_bufnr, v:false, win_config_dict.padding)
               endif
-              let winid = nvim_open_win(a:bufnr, v:true, win_config)
-              return [winid, border_winid]
+
+              if win_config_dict.border isnot v:null && border_bufnr isnot v:null
+                call ${nvimBorderRender.inline(
+                  'border_bufnr, a:options, win_config_dict.border',
+                )}
+                let border_winid = nvim_open_win(border_bufnr, v:false, win_config_dict.border)
+              endif
+
+              return [winid, border_winid, padding_winid]
             endfunction
           `
-          : `
+        : `
             function! ${name}(bufnr, options) abort
               " TODO
             endfunction
           `,
     ),
-    resize: m.fn<[number, floatingModule.OpenOptions], [number, number]>(
-      'resize',
-      ({ name }) =>
-        isNvim
-          ? `
+    resize: m.fn<
+      [number, floatingModule.OpenOptions],
+      [number, number | null, number | null]
+    >('resize', ({ name }) =>
+      isNvim
+        ? `
             function! ${name}(bufnr, options) abort
-              let win_config = ${nvimWinConfig.name}(a:options, 'win')
+              let win_config_dict = ${nvimWinConfig.inline("a:options, 'win'")}
               let border_bufnr = get(a:options, 'border_bufnr', v:null)
+              let padding_bufnr = get(a:options, 'padding_bufnr', v:null)
               let border_winid = v:null
-              if has_key(a:options, 'border') && border_bufnr isnot v:null
-                let border_winid = bufwinid(border_bufnr)
-                let border_win_config = ${nvimWinConfig.name}(a:options, 'border')
-                call ${nvimBorderRender.name}(border_bufnr, a:options, border_win_config)
-                call nvim_win_set_config(border_winid, border_win_config)
-              endif
+              let padding_winid = v:null
+
               let winid = bufwinid(a:bufnr)
-              call nvim_win_set_config(winid, win_config)
-              return [winid, border_winid]
+              call nvim_win_set_config(winid, win_config_dict.content)
+
+              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
+                let padding_winid = bufwinid(padding_bufnr)
+                call nvim_win_set_config(padding_winid, win_config_dict.padding)
+              endif
+
+              if win_config_dict.border isnot v:null && border_bufnr isnot v:null
+                let border_winid = bufwinid(border_bufnr)
+                call ${nvimBorderRender.inline(
+                  'border_bufnr, a:options, win_config_dict.border',
+                )}
+                call nvim_win_set_config(border_winid, win_config_dict.border)
+              endif
+
+              return [winid, border_winid, padding_winid]
             endfunction
           `
-          : `
+        : `
             function! ${name}(bufnr, options) abort
               " TODO
             endfunction

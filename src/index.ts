@@ -28,22 +28,19 @@ export async function activate(context: ExtensionContext) {
       mode: 'base',
     });
     await floatWin.open({
-      relative: 'center',
+      relative: 'cursor-around',
       top: 0,
       left: 0,
       title: 'test',
-      width: 30,
-      height: 1,
+      width: 2,
+      height: 2,
       border: [],
-      padding: [],
+      // padding: [],
       modifiable: true,
       winhl: 'WinHL',
       border_winhl: 'WinHLB',
-      focus: true,
+      focus: false,
       filetype: 'test',
-      inited_execute: (ctx) => `
-        call feedkeys('A')
-      `,
     });
   });
 }

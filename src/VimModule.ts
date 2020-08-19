@@ -22,6 +22,7 @@ export namespace VimModule {
 
   export type FnCaller<Args extends any[], R> = {
     name: string;
+    inline: (argsExpression?: string) => string;
     call: (...args: Args) => Promise<R>;
     callNotify: (...args: Args) => void;
   };
@@ -39,7 +40,14 @@ export class VimModule {
         endif
 
         function! ${callFunc}(module_key, method_name, args)
-          return call(${globalVariable}[a:module_key][a:method_name], a:args)
+          try
+            return call(${globalVariable}[a:module_key][a:method_name], a:args)
+          catch
+            let ex = v:exception
+            echom "error from " . a:module_key . "." . a:method_name
+            echoerr ex
+            throw ex
+          endtry
         endfunction
       `,
     );
@@ -69,20 +77,12 @@ export class VimModule {
 
   constructor(public moduleKey: string) {}
 
-  get moduleVariable() {
-    return `${globalVariable}.${this.moduleKey}`;
-  }
-
-  getName(name: string) {
-    return `${this.moduleVariable}.${name}`;
-  }
-
   fn<Args extends any[], R>(
     fnName: string,
     getContent: (ctx: VimModule.FnContext) => string,
   ): VimModule.FnCaller<Args, R> {
     const nvim = workspace.nvim;
-    const name = this.getName(fnName);
+    const name = `${globalVariable}.${this.moduleKey}.${fnName}`;
     const content = getContent({ name: name });
     const debugKey = `${this.moduleKey}.${fnName}`;
     VimModule.initQueue.push(async () => {
@@ -91,6 +91,8 @@ export class VimModule {
     });
     return {
       name,
+      inline: (argsExpression: string = '') =>
+        `${callFunc}('${this.moduleKey}', '${fnName}', [${argsExpression}])`,
       call: (...args: Args) => {
         outputChannel.appendLine(`call ${debugKey}`);
         return nvim.call(callFunc, [this.moduleKey, fnName, args]) as Promise<

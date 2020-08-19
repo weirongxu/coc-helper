@@ -23,6 +23,7 @@ export namespace FloatingWindow {
   export type OpenOptions = Merge<
     floatingModule.OpenOptions,
     {
+      border?: (boolean | number)[];
       inited_execute?: OpenInitedExecute;
       padding_inited_execute?: OpenInitedExecute;
       border_inited_execute?: OpenInitedExecute;
@@ -96,8 +97,10 @@ const initedContextVars = {
 export class FloatingWindow implements Disposable {
   buffer: Buffer;
   borderBuffer?: Buffer;
+  paddingBuffer?: Buffer;
   win?: Window;
   borderWin?: Window;
+  paddingWin?: Window;
   nvim = workspace.nvim;
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
@@ -164,7 +167,7 @@ export class FloatingWindow implements Disposable {
     }
   }
 
-  protected getDefaultOptions(options: FloatingWindow.OpenOptions) {
+  protected getDefaultOpenOptions(options: FloatingWindow.OpenOptions) {
     let inited_execute = options.inited_execute?.(initedContextVars.open) ?? '';
     inited_execute =
       modePresets[this.mode].openInitedExecute(initedContextVars.open) +
@@ -178,13 +181,15 @@ export class FloatingWindow implements Disposable {
       modePresets.show.openInitedExecute(initedContextVars.open);
 
     const modifiable =
-      (this.mode ? modePresets[this.mode].modifiable : undefined) ??
       options.modifiable ??
+      (this.mode ? modePresets[this.mode].modifiable : undefined) ??
       false;
     const focus =
-      (this.mode ? modePresets[this.mode].focus : undefined) ??
       options.focus ??
+      (this.mode ? modePresets[this.mode].focus : undefined) ??
       false;
+
+    const border = options.border?.map((b) => (typeof b === 'boolean' ? 1 : b));
 
     const finalOptions = {
       winhl: 'CocHelperNormalFloat',
@@ -197,6 +202,7 @@ export class FloatingWindow implements Disposable {
       border_bufnr: this.borderBufnr,
       padding_bufnr: this.paddingBufnr,
       modifiable,
+      border,
       focus,
     };
     return Object.entries(finalOptions).reduce((o, [key, val]) => {
@@ -216,7 +222,7 @@ export class FloatingWindow implements Disposable {
       return;
     }
 
-    const finalOptions = this.getDefaultOptions(options);
+    const finalOptions = this.getDefaultOpenOptions(options);
 
     this.nvim.pauseNotification();
     this.buffer.setOption('modifiable', true, true);
@@ -247,31 +253,43 @@ export class FloatingWindow implements Disposable {
   }
 
   async resume(options: FloatingWindow.OpenOptions) {
-    const finalOptions = this.getDefaultOptions(options);
+    const finalOptions = this.getDefaultOpenOptions(options);
 
-    const [winid, borderWinid]: [
+    const [winid, borderWinid, paddingWinid]: [
       number,
-      number?,
+      number | null,
+      number | null,
     ] = await floatingModule.resume.call(this.bufnr, finalOptions);
     if (workspace.isVim) {
       await this.nvim.command('redraw!');
     }
     this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid ? this.nvim.createWindow(winid) : undefined;
+    this.borderWin = borderWinid
+      ? this.nvim.createWindow(borderWinid)
+      : undefined;
+    this.paddingWin = paddingWinid
+      ? this.nvim.createWindow(paddingWinid)
+      : undefined;
   }
 
   async resize(options: FloatingWindow.OpenOptions) {
-    const finalOptions = this.getDefaultOptions(options);
+    const finalOptions = this.getDefaultOpenOptions(options);
 
-    const [winid, borderWinid]: [
+    const [winid, borderWinid, paddingWinid]: [
       number,
-      number?,
+      number | null,
+      number | null,
     ] = await floatingModule.resize.call(this.bufnr, finalOptions);
     if (workspace.isVim) {
       await this.nvim.command('redraw!');
     }
     this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid ? this.nvim.createWindow(winid) : undefined;
+    this.borderWin = borderWinid
+      ? this.nvim.createWindow(borderWinid)
+      : undefined;
+    this.paddingWin = paddingWinid
+      ? this.nvim.createWindow(paddingWinid)
+      : undefined;
   }
 
   async close() {

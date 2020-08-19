@@ -5,6 +5,16 @@ const isNvim = workspace.isNvim;
 
 export const utilModule = VimModule.create('util', (m) => {
   return {
+    globalCursorPosition: m.fn<[], [number, number]>(
+      'global_cursor_position',
+      ({ name }) => `
+        function! ${name}()
+          let nr = winnr()
+          let [row, col] = win_screenpos(nr)
+          return [row + winline() - 2, col + wincol() - 2]
+        endfunction
+      `,
+    ),
     isFloat: m.fn<[number], boolean>('is_float', ({ name }) =>
       isNvim
         ? `
