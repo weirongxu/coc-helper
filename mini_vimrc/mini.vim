@@ -13,7 +13,9 @@ nmap <Leader>t :CocCommand testHelper<CR>
 
 set hidden
 set cmdheight=2
-set termguicolors
+if has('nvim')
+  set termguicolors
+endif
 set wildmenu
 set ignorecase
 set mouse+=a

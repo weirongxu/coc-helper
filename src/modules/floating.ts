@@ -450,7 +450,7 @@ export const floatingModule = VimModule.create('float', (m) => {
               call ${initExecute.inline(
                 "{'bufnr': bufnr}, get(a:options, 'inited_execute', '')",
               )}
-              return [bufnr, v:null]
+              return [bufnr, v:null, v:null]
             endfunction
           `,
     ),
@@ -519,7 +519,7 @@ export const floatingModule = VimModule.create('float', (m) => {
               if filetype != v:null
                 call setbufvar(a:bufnr, '&filetype', filetype)
               endif
-              return [winid, v:null]
+              return [winid, v:null, v:null]
             endfunction
           `,
     ),
@@ -554,7 +554,9 @@ export const floatingModule = VimModule.create('float', (m) => {
           `
         : `
             function! ${name}(bufnr, options) abort
-              " TODO
+              let win_config = ${vimWinConfig.inline('a:options')}
+              let winid = popup_create(a:bufnr, win_config)
+              return [winid, v:null, v:null]
             endfunction
           `,
     ),
@@ -565,7 +567,7 @@ export const floatingModule = VimModule.create('float', (m) => {
       isNvim
         ? `
             function! ${name}(bufnr, options) abort
-              let win_config_dict = ${nvimWinConfig.inline("a:options, 'win'")}
+              let win_config_dict = ${nvimWinConfig.inline('a:options')}
               let border_bufnr = get(a:options, 'border_bufnr', v:null)
               let padding_bufnr = get(a:options, 'padding_bufnr', v:null)
               let border_winid = v:null
@@ -592,7 +594,10 @@ export const floatingModule = VimModule.create('float', (m) => {
           `
         : `
             function! ${name}(bufnr, options) abort
-              " TODO
+              let win_config = ${vimWinConfig.inline('a:options')}
+              let winid = bufwinid(a:bufnr)
+              call popup_setoptions(winid, win_config)
+              return [winid, v:null, v:null]
             endfunction
           `,
     ),

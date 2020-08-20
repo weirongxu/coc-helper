@@ -9,6 +9,7 @@ export * from './util';
 
 import { VimModule } from './VimModule';
 import { FloatingWindow } from './FloatingWindow';
+import { sleep } from './util';
 
 export async function activateHelper(context: ExtensionContext) {
   await VimModule.init();
@@ -34,6 +35,22 @@ export async function activate(context: ExtensionContext) {
       title: 'test',
       width: 2,
       height: 2,
+      border: [],
+      // padding: [],
+      modifiable: true,
+      winhl: 'WinHL',
+      border_winhl: 'WinHLB',
+      focus: false,
+      filetype: 'test',
+    });
+    await sleep(5000);
+    await floatWin.resize({
+      relative: 'cursor-around',
+      top: 0,
+      left: 0,
+      title: 'test',
+      width: 10,
+      height: 10,
       border: [],
       // padding: [],
       modifiable: true,
