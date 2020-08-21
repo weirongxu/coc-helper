@@ -22,7 +22,7 @@ export namespace VimModule {
 
   export type FnCaller<Args extends any[], R> = {
     name: string;
-    inline: (argsExpression?: string) => string;
+    inlineCall: (argsExpression?: string) => string;
     call: (...args: Args) => Promise<R>;
     callNotify: (...args: Args) => void;
   };
@@ -91,7 +91,7 @@ export class VimModule {
     });
     return {
       name,
-      inline: (argsExpression: string = '') =>
+      inlineCall: (argsExpression: string = '') =>
         `${callFunc}('${this.moduleKey}', '${fnName}', [${argsExpression}])`,
       call: (...args: Args) => {
         outputChannel.appendLine(`call ${debugKey}`);

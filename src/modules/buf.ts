@@ -23,14 +23,14 @@ export const bufModule = VimModule.create('buf', (m) => {
             if name is ''
               return nvim_create_buf(v:false, v:true)
             else
-              return ${createByName.inline('name')}
+              return ${createByName.inlineCall('name')}
             endif
           endfunction
         `
         : `
           function! ${name}(...) abort
             let name = get(a:000, 0, '')
-            return ${createByName.inline('name')}
+            return ${createByName.inlineCall('name')}
           endfunction
         `,
     ),
