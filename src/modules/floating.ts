@@ -32,6 +32,14 @@ export namespace floatingModule {
     width: number;
     height: number;
     /**
+     * Vim only
+     */
+    max_width?: number;
+    /**
+     * Vim only
+     */
+    max_height?: number;
+    /**
      * Left position
      */
     left: number;
@@ -64,7 +72,7 @@ export namespace floatingModule {
     title?: string;
     filetype?: string;
     /**
-     * neovim only
+     * Neovim only
      */
     focus?: boolean;
     lines?: string[];
@@ -72,7 +80,7 @@ export namespace floatingModule {
     modifiable?: boolean;
     winhl?: string;
     /**
-     * Nvim only
+     * Neovim only
      */
     winhlNC?: string;
     border_winhl?: string;
@@ -80,16 +88,21 @@ export namespace floatingModule {
     inited_execute?: string;
     border_inited_execute?: string;
     padding_inited_execute?: string;
+
+    border_bufnr?: number;
+    winid?: number;
+    border_winid?: number;
+    padding_winid?: number;
   }
 }
 
 const isNvim = workspace.isNvim;
 
 export const floatingModule = VimModule.create('float', (m) => {
-  type Edges = [number, number, number, number];
-  type Box = [number, number, number, number];
-  type Pos = [number, number];
-  type Size = [number, number];
+  type Edges = [top: number, right: number, down: number, left: number];
+  type Box = [top: number, left: number, width: number, height: number];
+  type Pos = [top: number, left: number];
+  type Size = [width: number, height: number];
 
   const getCenterPos = m.fn<[Box], Pos>(
     'get_center_pos',
@@ -186,8 +199,8 @@ export const floatingModule = VimModule.create('float', (m) => {
     {
       line: number;
       col: number;
-      maxwidth: number;
-      maxheight: number;
+      minwidth: number;
+      minheight: number;
       highlight: string;
       padding?: number[];
       border?: number[];
@@ -238,7 +251,15 @@ export const floatingModule = VimModule.create('float', (m) => {
         endif
         let config.minwidth = width
         let config.minheight = height
-        let config.highlight = get(a:options, 'winhl')
+        if has_key(a:options, 'max_width')
+          let config.maxwidth = a:options.max_width
+        endif
+        if has_key(a:options, 'max_height')
+          let config.maxheight = a:options.max_height
+        endif
+        if has_key(a:options, 'winhl')
+          let config.highlight = get(a:options, 'winhl')
+        endif
         if has_key(a:options, 'title')
           let config.title = a:options.title
         endif
@@ -570,10 +591,15 @@ export const floatingModule = VimModule.create('float', (m) => {
               let win_config_dict = ${nvimWinConfig.inline('a:options')}
               let border_bufnr = get(a:options, 'border_bufnr', v:null)
               let padding_bufnr = get(a:options, 'padding_bufnr', v:null)
-              let border_winid = v:null
-              let padding_winid = v:null
 
-              let winid = bufwinid(a:bufnr)
+              if has_key(a:options, 'winid')
+                let winid = a:options.winid
+              else
+                let winid = bufwinid(a:bufnr)
+              end
+              let border_winid = get(a:options, 'border_winid', v:null)
+              let padding_winid = get(a:options, 'padding_winid', v:null)
+
               call nvim_win_set_config(winid, win_config_dict.content)
 
               if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
@@ -594,8 +620,11 @@ export const floatingModule = VimModule.create('float', (m) => {
           `
         : `
             function! ${name}(bufnr, options) abort
+              if !has_key(a:options, 'winid')
+                throw
+              endif
               let win_config = ${vimWinConfig.inline('a:options')}
-              let winid = bufwinid(a:bufnr)
+              let winid = a:options.winid
               call popup_setoptions(winid, win_config)
               return [winid, v:null, v:null]
             endfunction
