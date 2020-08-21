@@ -643,20 +643,22 @@ export const floatingModule = VimModule.create('float', (m) => {
               let border_winid = get(a:options, 'border_winid', v:null)
               let padding_winid = get(a:options, 'padding_winid', v:null)
 
-              call ${nvimWinSetConfig.inlineCall('winid, win_config_dict.content')}
-
-              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
-                let padding_winid = bufwinid(padding_bufnr)
-                call ${nvimWinSetConfig.inlineCall('padding_winid, win_config_dict.padding')}
-              endif
-
               if win_config_dict.border isnot v:null && border_bufnr isnot v:null
                 let border_winid = bufwinid(border_bufnr)
                 call ${nvimBorderRender.inlineCall(
                   'border_bufnr, a:options, win_config_dict.border',
                 )}
                 call ${nvimWinSetConfig.inlineCall('border_winid, win_config_dict.border')}
+                redraw!
               endif
+
+              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
+                let padding_winid = bufwinid(padding_bufnr)
+                call ${nvimWinSetConfig.inlineCall('padding_winid, win_config_dict.padding')}
+                redraw!
+              endif
+
+              call ${nvimWinSetConfig.inlineCall('winid, win_config_dict.content')}
 
               return [winid, border_winid, padding_winid]
             endfunction
@@ -692,20 +694,22 @@ export const floatingModule = VimModule.create('float', (m) => {
               let border_winid = get(a:options, 'border_winid', v:null)
               let padding_winid = get(a:options, 'padding_winid', v:null)
 
-              call ${nvimWinSetConfig.inlineCall('winid, win_config_dict.content')}
-
-              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
-                let padding_winid = bufwinid(padding_bufnr)
-                call ${nvimWinSetConfig.inlineCall('padding_winid, win_config_dict.padding')}
-              endif
-
               if win_config_dict.border isnot v:null && border_bufnr isnot v:null
                 let border_winid = bufwinid(border_bufnr)
                 call ${nvimBorderRender.inlineCall(
                   'border_bufnr, a:options, win_config_dict.border',
                 )}
                 call ${nvimWinSetConfig.inlineCall('border_winid, win_config_dict.border')}
+                redraw!
               endif
+
+              if win_config_dict.padding isnot v:null && padding_bufnr isnot v:null
+                let padding_winid = bufwinid(padding_bufnr)
+                call ${nvimWinSetConfig.inlineCall('padding_winid, win_config_dict.padding')}
+                redraw!
+              endif
+
+              call ${nvimWinSetConfig.inlineCall('winid, win_config_dict.content')}
 
               return [winid, border_winid, padding_winid]
             endfunction

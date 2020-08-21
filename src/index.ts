@@ -43,10 +43,7 @@ export async function activate(context: ExtensionContext) {
       focus: false,
       filetype: 'test',
     });
-    if (workspace.isVim) {
-      await workspace.nvim.command('redraw!');
-    }
-    await sleep(5000);
+    await sleep(2000);
     await floatWin.resize({
       relative: 'cursor-around',
       top: 0,
@@ -62,8 +59,21 @@ export async function activate(context: ExtensionContext) {
       focus: false,
       filetype: 'test',
     });
-    if (workspace.isVim) {
-      await workspace.nvim.command('redraw!');
-    }
+    await sleep(2000);
+    await floatWin.resize({
+      relative: 'cursor-around',
+      top: 0,
+      left: 0,
+      title: 'test',
+      width: 5,
+      height: 5,
+      border: [],
+      // padding: [],
+      modifiable: true,
+      winhl: 'WinHL',
+      border_winhl: 'WinHLB',
+      focus: false,
+      filetype: 'test',
+    });
   });
 }
