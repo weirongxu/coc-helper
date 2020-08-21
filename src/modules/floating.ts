@@ -132,9 +132,7 @@ export const floatingModule = VimModule.create('float', (m) => {
           let top += 1
         endif
         if left + width >= columns
-          let left -= width
-        else
-          let left += 1
+          let left -= width - 1
         endif
         return [top, left]
       endfunction
