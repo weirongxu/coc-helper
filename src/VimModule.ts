@@ -44,7 +44,7 @@ export class VimModule {
             return call(${globalVariable}[a:module_key][a:method_name], a:args)
           catch
             let ex = v:exception
-            echom "error from " . a:module_key . "." . a:method_name
+            echom "error at " . a:module_key . "." . a:method_name
             echoerr ex
             throw ex
           endtry

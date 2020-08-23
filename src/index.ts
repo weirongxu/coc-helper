@@ -21,8 +21,8 @@ export async function activateHelper(context: ExtensionContext) {
 export async function activate(context: ExtensionContext) {
   await activateHelper(context);
 
-  await workspace.nvim.command('hi WinHL guibg=#aa0000');
-  await workspace.nvim.command('hi WinHLB guibg=#0000aa');
+  await workspace.nvim.command('hi WinHL ctermbg=73 guibg=#aa0000');
+  await workspace.nvim.command('hi WinHLB ctermbg=103 guibg=#0000aa');
 
   commands.registerCommand('testHelper', async () => {
     const floatWin = await FloatingWindow.create({
@@ -30,17 +30,18 @@ export async function activate(context: ExtensionContext) {
     });
     await floatWin.open({
       relative: 'cursor-around',
+      lines: ['hello'],
       top: 0,
       left: 0,
       title: 'test',
       width: 5,
       height: 5,
-      border: [],
-      // padding: [],
+      border: [1, 1, 1, 0],
+      padding: [],
       modifiable: true,
       winhl: 'WinHL',
       border_winhl: 'WinHLB',
-      focus: false,
+      focus: true,
       filetype: 'test',
     });
     await sleep(2000);
@@ -52,7 +53,7 @@ export async function activate(context: ExtensionContext) {
       width: 10,
       height: 10,
       border: [],
-      // padding: [],
+      padding: [],
       modifiable: true,
       winhl: 'WinHL',
       border_winhl: 'WinHLB',
@@ -67,8 +68,8 @@ export async function activate(context: ExtensionContext) {
       title: 'test',
       width: 5,
       height: 5,
-      border: [],
-      // padding: [],
+      border: [1, 1, 1, 0],
+      padding: [],
       modifiable: true,
       winhl: 'WinHL',
       border_winhl: 'WinHLB',

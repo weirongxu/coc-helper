@@ -59,6 +59,13 @@ const modePresets: Record<
     openInitedExecute: (ctx) => `
       call setbufvar(${ctx.bufnr}, '&list', 0)
 
+      call setbufvar(${ctx.bufnr}, '&listchars', '')
+      if has('nvim')
+        call setbufvar(${ctx.bufnr}, '&fillchars', 'eob:\ ')
+      else
+        call setbufvar(${ctx.bufnr}, '&fillchars', '')
+      endif
+
       call setbufvar(${ctx.bufnr}, '&signcolumn', 'no')
       call setbufvar(${ctx.bufnr}, '&number', 0)
       call setbufvar(${ctx.bufnr}, '&relativenumber', 0)
@@ -102,6 +109,7 @@ export class FloatingWindow implements Disposable {
   borderWin?: Window;
   paddingWin?: Window;
   nvim = workspace.nvim;
+  store_cursor_position?: floatingModule.Position;
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
     const mode = options.mode ?? 'default';
@@ -112,30 +120,16 @@ export class FloatingWindow implements Disposable {
       modePresets[mode].createInitedExecute(initedContextVars.create) +
       '\n' +
       inited_execute;
-    const padding_inited_execute =
-      options.padding_inited_execute?.(initedContextVars.create) ??
-      modePresets.show.createInitedExecute(initedContextVars.create);
     const border_inited_execute =
       options.border_inited_execute?.(initedContextVars.create) ??
       modePresets.show.createInitedExecute(initedContextVars.create);
 
-    const [bufnr, borderBufnr, paddingBufnr]: [
-      number,
-      number | null,
-      number | null,
-    ] = await floatingModule.create.call({
+    const [bufnr, borderBufnr] = await floatingModule.create.call({
       ...options,
       inited_execute,
       border_inited_execute,
-      padding_inited_execute,
     });
-    return new FloatingWindow(
-      bufnr,
-      borderBufnr ?? undefined,
-      paddingBufnr ?? undefined,
-      options,
-      mode,
-    );
+    return new FloatingWindow(bufnr, borderBufnr ?? undefined, options, mode);
   }
 
   private disposables: Disposable[] = [];
@@ -143,7 +137,6 @@ export class FloatingWindow implements Disposable {
   protected constructor(
     public bufnr: number,
     public borderBufnr: number | undefined,
-    public paddingBufnr: number | undefined,
     public createOptions: FloatingWindow.CreateOptions,
     public mode: floatingModule.Mode,
   ) {
@@ -157,9 +150,6 @@ export class FloatingWindow implements Disposable {
           helperAsyncCatch(async (curBufnr) => {
             if (this.borderBufnr && curBufnr === this.bufnr) {
               await utilModule.closeWinByBufnr.call([this.borderBufnr]);
-            }
-            if (this.paddingBufnr && curBufnr === this.bufnr) {
-              await utilModule.closeWinByBufnr.call([this.paddingBufnr]);
             }
           }),
         ),
@@ -200,13 +190,12 @@ export class FloatingWindow implements Disposable {
       padding_inited_execute,
       border_inited_execute,
       border_bufnr: this.borderBufnr,
-      padding_bufnr: this.paddingBufnr,
       winid: this.win?.id,
       border_winid: this.borderWin?.id,
-      padding_winid: this.paddingWin?.id,
       modifiable,
       border,
       focus,
+      store_cursor_position: this.store_cursor_position,
     };
     return Object.entries(finalOptions).reduce((o, [key, val]) => {
       if (val === undefined) {
@@ -227,6 +216,12 @@ export class FloatingWindow implements Disposable {
 
     const finalOptions = this.getDefaultOpenOptions(options);
 
+    const [
+      winid,
+      borderWinid,
+      store_cursor_position,
+    ] = await floatingModule.open.call(this.bufnr, finalOptions);
+
     this.nvim.pauseNotification();
     this.buffer.setOption('modifiable', true, true);
     this.buffer.setOption('readonly', false, true);
@@ -242,9 +237,22 @@ export class FloatingWindow implements Disposable {
         void this.buffer.addHighlight(hl);
       }
     }
+    if (workspace.isVim) {
+      this.nvim.command('redraw!', true);
+    }
     await this.nvim.resumeNotification();
 
-    const [winid, borderWinid] = await floatingModule.open.call(
+    this.store_cursor_position = store_cursor_position ?? undefined;
+    this.win = this.nvim.createWindow(winid);
+    this.borderWin = borderWinid
+      ? this.nvim.createWindow(borderWinid)
+      : undefined;
+  }
+
+  async resume(options: FloatingWindow.OpenOptions) {
+    const finalOptions = this.getDefaultOpenOptions(options);
+
+    const [winid, borderWinid] = await floatingModule.resume.call(
       this.bufnr,
       finalOptions,
     );
@@ -252,46 +260,24 @@ export class FloatingWindow implements Disposable {
       await this.nvim.command('redraw!');
     }
     this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid ? this.nvim.createWindow(winid) : undefined;
-  }
-
-  async resume(options: FloatingWindow.OpenOptions) {
-    const finalOptions = this.getDefaultOpenOptions(options);
-
-    const [winid, borderWinid, paddingWinid]: [
-      number,
-      number | null,
-      number | null,
-    ] = await floatingModule.resume.call(this.bufnr, finalOptions);
-    if (workspace.isVim) {
-      await this.nvim.command('redraw!');
-    }
-    this.win = this.nvim.createWindow(winid);
     this.borderWin = borderWinid
       ? this.nvim.createWindow(borderWinid)
-      : undefined;
-    this.paddingWin = paddingWinid
-      ? this.nvim.createWindow(paddingWinid)
       : undefined;
   }
 
   async resize(options: FloatingWindow.OpenOptions) {
     const finalOptions = this.getDefaultOpenOptions(options);
 
-    const [winid, borderWinid, paddingWinid]: [
-      number,
-      number | null,
-      number | null,
-    ] = await floatingModule.resize.call(this.bufnr, finalOptions);
+    const [winid, borderWinid] = await floatingModule.resize.call(
+      this.bufnr,
+      finalOptions,
+    );
     if (workspace.isVim) {
       await this.nvim.command('redraw!');
     }
     this.win = this.nvim.createWindow(winid);
     this.borderWin = borderWinid
       ? this.nvim.createWindow(borderWinid)
-      : undefined;
-    this.paddingWin = paddingWinid
-      ? this.nvim.createWindow(paddingWinid)
       : undefined;
   }
 
@@ -300,7 +286,7 @@ export class FloatingWindow implements Disposable {
       await utilModule.closeWinByBufnr.call([this.bufnr]);
     } else {
       if (this.win) {
-        await this.nvim.call('popup_close', [this.win.id]).catch();
+        await this.nvim.call('popup_close', [this.win.id]).catch(() => {});
       }
     }
   }
