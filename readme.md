@@ -5,3 +5,138 @@ Helpers for coc.nvim
 ## Used by
 
 - [coc-floatinput](https://github.com/weirongxu/coc-floatinput)
+
+## Usage
+
+### activateHelper
+
+```typescript
+import { activateHelper } from 'coc-helper';
+
+export async function activate(context: ExtensionContext) {
+  await activateHelper(context);
+}
+```
+
+### VimModule
+
+Used to create some vim modules, but avoid in autoload.
+
+**NOTE**: `VimModule.create()` must be called before `activateHelper()`, otherwise you need to call `VimModule.init()` before using.
+
+```typescript
+import { VimModule } from 'coc-helper';
+
+// create module
+const utilMod = VimModule.create('util', (mod) => {
+  // internal function
+  const screenPos = mod.fn<[nr: number], [row: number, col: number]>('screen_pos', ({ name }) => `
+    function! ${name}(nr)
+      return win_screenpos(a:nr)
+    endfunction
+  `)
+
+  return {
+    // export function
+    globalCursorPosition: mod.fn<[], [number, number]>(
+      'global_cursor_position',
+      ({ name }) => `
+        function! ${name}()
+          let nr = winnr()
+          let [row, col] = {screenPos.inlineCall('nr')}
+          return [row + winline() - 2, col + wincol() - 2]
+        endfunction
+      `,
+    ),
+  };
+});
+```
+
+- VimModule.create: Create a vim module.
+- VimModule.prototype.fn: Create a vim function.
+
+### FloatingWindow
+
+Create a floating window.
+
+- Support border and padding.
+- Supported relative: cursor-around, cursor, center, editor.
+
+```typescript
+import { FloatingWindow, sleep } from 'coc-helper';
+
+// FloatingWindow create
+const floatWin = await FloatingWindow.create({
+  mode: 'base',
+});
+// FloatingWindow open
+await floatWin.open({
+  relative: 'cursor-around',
+  lines: ['hello'],
+  top: 0,
+  left: 0,
+  title: 'test',
+  width: 5,
+  height: 5,
+  border: [1, 1, 1, 0],
+  padding: [],
+});
+await sleep(2000);
+// FloatingWindow resize
+await floatWin.resize({
+  relative: 'cursor-around',
+  top: 0,
+  left: 0,
+  title: 'test',
+  width: 10,
+  height: 10,
+  border: [],
+  padding: [],
+  modifiable: true,
+  winhl: 'WinHL',
+  border_winhl: 'WinHLB',
+  focus: false,
+  filetype: 'test',
+});
+```
+
+### Notifier
+
+Combine the notify of coc.nvim
+
+```typescript
+import { Notifier } from 'coc-helper';
+import { workspace } from 'coc.nvim';
+
+const { nvim } = workspace;
+
+// create
+const callNotifier = Notifier.create(() => {
+  nvim.call('func', true);
+  nvim.call('func2', true);
+});
+
+const callNotifier2 = Notifier.create(() => {
+  nvim.call('func3', true);
+});
+
+// combine
+const callNotifierCombined = callNotifier.concat(callNotifier2);
+const callNotifierCombined2 = Notifier.combine([callNotifier, callNotifier2]);
+
+async function fetchNotifier() {
+  return callNotifier;
+}
+
+// run
+await callNotifierCombined.run();
+await Notifier.run(fetchNotifier());
+await Notifier.runAll([fetchNotifier(), callNotifierCombined]);
+
+// notify
+nvim.pauseNotification();
+(await fetchNotifier()).notify();
+Notifier.notifyAll([callNotifierCombined, callNotifier2]);
+callNotifierCombined.notify();
+await nvim.resumeNotification();
+```

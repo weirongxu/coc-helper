@@ -30,10 +30,10 @@ export namespace floatingModule {
 
   export interface OpenOptions {
     /**
-     * Relative position, not support the 'win' in vim
+     * Relative position
      * @default 'editor'
      */
-    relative?: 'center' | 'cursor' | 'cursor-around' | 'win' | 'editor';
+    relative?: 'center' | 'cursor' | 'cursor-around' | 'editor';
     width: number;
     height: number;
     /**
