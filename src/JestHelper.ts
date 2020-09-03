@@ -1,4 +1,7 @@
-// TODO MIT license
+/*---------------------------------------------------------------------------------------------
+ * Copyright (c) 2018-2020 by Qiming Zhao <chemzqm@gmail.com>. All rights reserved.
+ * Licensed under the MIT License. See LICENSE in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 // modified from: https://github.com/neoclide/coc.nvim/blob/687af54a67e20d6bb1e1760f6e702fb751591157/src/__tests__/helper.ts
 
 import { Buffer, Neovim, Window } from '@chemzqm/neovim';
