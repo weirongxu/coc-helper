@@ -1,11 +1,12 @@
 import { VimModule } from '../VimModule';
 import { workspace } from 'coc.nvim';
-
-const isNvim = workspace.isNvim;
+import { FloatingWindow } from '../FloatingWindow';
 
 export const utilModule = VimModule.create('util', (m) => {
+  const isNvim = workspace.isNvim;
+
   return {
-    globalCursorPosition: m.fn<[], [number, number]>(
+    globalCursorPosition: m.fn<[], FloatingWindow.Position>(
       'global_cursor_position',
       ({ name }) => `
         function! ${name}()

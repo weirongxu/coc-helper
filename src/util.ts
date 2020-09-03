@@ -1,4 +1,5 @@
 import { workspace, OutputChannel } from 'coc.nvim';
+import util from 'util';
 
 export const outputChannel = workspace.createOutputChannel('coc-helper');
 
@@ -43,4 +44,49 @@ export function sleep(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+export function prettyPrint(...data: any[]) {
+  const padZore = (s: number) => s.toString(10).padStart(2, '0');
+  const date = new Date();
+  let s = `[${date.getFullYear()}/${padZore(date.getMonth() + 1)}/${padZore(
+    date.getDate(),
+  )} ${padZore(date.getHours())}:${padZore(date.getMinutes())}:${padZore(
+    date.getSeconds(),
+  )}.${padZore(date.getMilliseconds())}]`;
+  for (const d of data) {
+    s += ' ' + util.inspect(d);
+  }
+  // eslint-disable-next-line no-restricted-properties
+  workspace.showMessage(s);
+}
+
+export function sum(arr: number[]) {
+  return arr.reduce((total, cur) => total + cur);
+}
+
+export function byteIndex(content: string, index: number): number {
+  const s = content.slice(0, index);
+  return Buffer.byteLength(s);
+}
+
+export function byteLength(str: string): number {
+  return Buffer.byteLength(str);
+}
+
+export async function displayHeight(
+  width: number,
+  lines: string[],
+  position?: [line: number, column: number],
+) {
+  const heightGroup = await Promise.all(
+    lines.map(async (l, idx) => {
+      let strwidth: number = await workspace.nvim.call('strdisplaywidth', [l]);
+      if (position?.[0] === idx && position[1] > strwidth) {
+        strwidth += 1;
+      }
+      return Math.ceil(strwidth / width);
+    }),
+  );
+  return sum(heightGroup);
 }

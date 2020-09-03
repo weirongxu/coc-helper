@@ -1,144 +1,241 @@
-import { Window } from '@chemzqm/neovim';
 import { Buffer, Disposable, disposeAll, events, workspace } from 'coc.nvim';
-import { Merge } from 'type-fest';
+import { BufferHighlight } from '@chemzqm/neovim';
+import { Notifier } from './notifier';
 import { floatingModule } from './modules/floating';
 import { utilModule } from './modules/util';
 import { helperAsyncCatch } from './util';
+import { FloatingUtil } from './FloatingUtil';
 
 export namespace FloatingWindow {
+  export type Mode = 'default' | 'base' | 'show';
   export type CreateInitedExecute = (context: { bufnr: string }) => string;
   export type OpenInitedExecute = (context: {
     bufnr: string;
     winid: string;
   }) => string;
-  export type CreateOptions = Merge<
-    floatingModule.CreateOptions,
-    {
-      inited_execute?: CreateInitedExecute;
-      padding_inited_execute?: CreateInitedExecute;
-      border_inited_execute?: CreateInitedExecute;
-    }
-  >;
 
-  export type OpenOptions = Merge<
-    floatingModule.OpenOptions,
-    {
-      border?: (boolean | number)[];
-      inited_execute?: OpenInitedExecute;
-      padding_inited_execute?: OpenInitedExecute;
-      border_inited_execute?: OpenInitedExecute;
-    }
-  >;
+  export type CreateOptions = {
+    /**
+     * Buffer name
+     */
+    name?: string;
+    mode?: Mode;
+    initedExecute?: CreateInitedExecute;
+    hasBorderBuf?: boolean;
+    borderInitedExecute?: CreateInitedExecute;
+  };
+
+  export type OpenOptions = {
+    /**
+     * Relative position
+     * @default 'editor'
+     */
+    relative?: 'center' | 'cursor' | 'cursor-around' | 'editor';
+    /**
+     * Top position
+     */
+    top: number;
+    /**
+     * Left position
+     */
+    left: number;
+    topOffset?: number;
+    leftOffset?: number;
+    width: number;
+    height: number;
+    /**
+     * Vim only
+     */
+    maxWidth?: number;
+    /**
+     * Vim only
+     */
+    maxHeight?: number;
+    /**
+     * Defining the padding, order is above/right/below/left.
+     * Use empty list to make all with 1 padding
+     */
+    padding?: number[];
+    /**
+     * Defining the borders enable or not,
+     * order is above/right/below/left.
+     * Use empty list to enable all
+     */
+    border?: (boolean | number)[];
+    /**
+     * Border chars for floating window, their order is top/right/bottom/left/topleft/topright/botright/botleft
+     */
+    borderChars?: string[];
+    borderOnly?: boolean;
+    /**
+     * Buffer name
+     */
+    name?: string;
+    /**
+     * Float win title
+     */
+    title?: string;
+    filetype?: string;
+    /**
+     * Focus to window
+     * Neovim only
+     */
+    focus?: boolean;
+    lines?: string[];
+    highlights?: BufferHighlight[];
+    modifiable?: boolean;
+    winHl?: string;
+    /**
+     * Neovim only
+     */
+    winHlNC?: string;
+    borderWinHl?: string;
+    initedExecute?: OpenInitedExecute;
+    borderInitedExecute?: OpenInitedExecute;
+    context?: FloatingUtil.Context;
+  };
 }
 
-const modePresets: Record<
-  floatingModule.Mode,
-  {
-    modifiable?: boolean;
-    focus?: boolean;
-    createInitedExecute: FloatingWindow.CreateInitedExecute;
-    openInitedExecute: FloatingWindow.OpenInitedExecute;
-  }
-> = {
-  default: {
-    modifiable: false,
-    focus: false,
-    createInitedExecute: () => '',
-    openInitedExecute: () => '',
-  },
-  base: {
-    createInitedExecute: (ctx) => `
-      call setbufvar(${ctx.bufnr}, '&buftype', 'nofile')
-      call setbufvar(${ctx.bufnr}, '&bufhidden', 'hide')
-      call setbufvar(${ctx.bufnr}, '&buflisted', 0)
-
-      call setbufvar(${ctx.bufnr}, '&swapfile', 0)
-
-      call setbufvar(${ctx.bufnr}, '&modeline', 0)
-    `,
-    openInitedExecute: (ctx) => `
-      call setbufvar(${ctx.bufnr}, '&list', 0)
-
-      call setbufvar(${ctx.bufnr}, '&listchars', '')
-      if has('nvim')
-        call setbufvar(${ctx.bufnr}, '&fillchars', 'eob:\ ')
-      else
-        call setbufvar(${ctx.bufnr}, '&fillchars', '')
-      endif
-
-      call setbufvar(${ctx.bufnr}, '&signcolumn', 'no')
-      call setbufvar(${ctx.bufnr}, '&number', 0)
-      call setbufvar(${ctx.bufnr}, '&relativenumber', 0)
-      call setbufvar(${ctx.bufnr}, '&foldenable', 0)
-      call setbufvar(${ctx.bufnr}, '&foldcolumn', 0)
-
-      call setbufvar(${ctx.bufnr}, '&spell', 0)
-
-      call setbufvar(${ctx.bufnr}, '&cursorcolumn', 0)
-      call setbufvar(${ctx.bufnr}, '&cursorline', 0)
-      call setbufvar(${ctx.bufnr}, '&colorcolumn', '')
-    `,
-  },
-  show: {
-    modifiable: false,
-    createInitedExecute: (ctx) => `
-      ${modePresets.base.createInitedExecute(ctx)}
-      call setbufvar(${ctx.bufnr}, '&undofile', 0)
-      call setbufvar(${ctx.bufnr}, '&undolevels', -1)
-
-      call setbufvar(${ctx.bufnr}, '&modifiable', 0)
-      call setbufvar(${ctx.bufnr}, '&modified', 0)
-      call setbufvar(${ctx.bufnr}, '&readonly', 1)
-    `,
-    openInitedExecute: (ctx) => `
-      ${modePresets.base.openInitedExecute(ctx)}
-    `,
-  },
-};
-
-const initedContextVars = {
-  create: { bufnr: 'a:ctx.bufnr' },
-  open: { bufnr: 'a:ctx.bufnr', winid: 'a:ctx.winid' },
-};
-
 export class FloatingWindow implements Disposable {
-  buffer: Buffer;
-  borderBuffer?: Buffer;
-  paddingBuffer?: Buffer;
-  win?: Window;
-  borderWin?: Window;
-  paddingWin?: Window;
-  nvim = workspace.nvim;
-  store_cursor_position?: floatingModule.Position;
+  static modePresets: Record<
+    FloatingWindow.Mode,
+    {
+      modifiable?: boolean;
+      focus?: boolean;
+      createInitedExecute: FloatingWindow.CreateInitedExecute;
+      openInitedExecute: FloatingWindow.OpenInitedExecute;
+    }
+  > = {
+    default: {
+      modifiable: false,
+      focus: false,
+      createInitedExecute: () => '',
+      openInitedExecute: () => '',
+    },
+    base: {
+      createInitedExecute: (ctx) => `
+        call setbufvar(${ctx.bufnr}, '&buftype', 'nofile')
+        call setbufvar(${ctx.bufnr}, '&bufhidden', 'hide')
+        call setbufvar(${ctx.bufnr}, '&buflisted', 0)
+
+        call setbufvar(${ctx.bufnr}, '&wrap', 1)
+
+        call setbufvar(${ctx.bufnr}, '&swapfile', 0)
+
+        call setbufvar(${ctx.bufnr}, '&modeline', 0)
+      `,
+      openInitedExecute: (ctx) => `
+        call setbufvar(${ctx.bufnr}, '&list', 0)
+
+        call setbufvar(${ctx.bufnr}, '&listchars', '')
+        if has('nvim')
+          call setbufvar(${ctx.bufnr}, '&fillchars', 'eob:\ ')
+        else
+          call setbufvar(${ctx.bufnr}, '&fillchars', '')
+        endif
+
+        call setbufvar(${ctx.bufnr}, '&signcolumn', 'no')
+        call setbufvar(${ctx.bufnr}, '&number', 0)
+        call setbufvar(${ctx.bufnr}, '&relativenumber', 0)
+        call setbufvar(${ctx.bufnr}, '&foldenable', 0)
+        call setbufvar(${ctx.bufnr}, '&foldcolumn', 0)
+
+        call setbufvar(${ctx.bufnr}, '&spell', 0)
+
+        call setbufvar(${ctx.bufnr}, '&cursorcolumn', 0)
+        call setbufvar(${ctx.bufnr}, '&cursorline', 0)
+        call setbufvar(${ctx.bufnr}, '&colorcolumn', '')
+      `,
+    },
+    show: {
+      modifiable: false,
+      createInitedExecute: (ctx) => `
+        ${FloatingWindow.modePresets.base.createInitedExecute(ctx)}
+        call setbufvar(${ctx.bufnr}, '&undofile', 0)
+        call setbufvar(${ctx.bufnr}, '&undolevels', -1)
+
+        call setbufvar(${ctx.bufnr}, '&modifiable', 0)
+        call setbufvar(${ctx.bufnr}, '&modified', 0)
+        call setbufvar(${ctx.bufnr}, '&readonly', 1)
+      `,
+      openInitedExecute: (ctx) => `
+        ${FloatingWindow.modePresets.base.openInitedExecute(ctx)}
+      `,
+    },
+  };
+
+  protected static initedContextVars = {
+    create: { bufnr: 'a:ctx.bufnr' },
+    open: { bufnr: 'a:ctx.bufnr', winid: 'a:ctx.winid' },
+  };
+
+  protected static _borderSrcId?: number;
+
+  protected static getInitedExecute(
+    mode: FloatingWindow.Mode,
+    options: FloatingWindow.CreateOptions,
+  ): [initedExecute: string, borderInitedExecute: string] {
+    let initedExecute =
+      options.initedExecute?.(FloatingWindow.initedContextVars.create) ?? '';
+    initedExecute =
+      FloatingWindow.modePresets[mode].createInitedExecute(
+        FloatingWindow.initedContextVars.create,
+      ) +
+      '\n' +
+      initedExecute;
+    const borderInitedExecute =
+      options.borderInitedExecute?.(FloatingWindow.initedContextVars.create) ??
+      FloatingWindow.modePresets.show.createInitedExecute(
+        FloatingWindow.initedContextVars.create,
+      );
+    return [initedExecute, borderInitedExecute];
+  }
+
+  static async borderSrcId() {
+    if (!this._borderSrcId) {
+      this._borderSrcId = await workspace.nvim.createNamespace();
+    }
+    return this._borderSrcId;
+  }
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
     const mode = options.mode ?? 'default';
+    const [initedExecute, borderInitedExecute] = this.getInitedExecute(
+      mode,
+      options,
+    );
+    const borderSrcId = await this.borderSrcId();
 
-    let inited_execute =
-      options.inited_execute?.(initedContextVars.create) ?? '';
-    inited_execute =
-      modePresets[mode].createInitedExecute(initedContextVars.create) +
-      '\n' +
-      inited_execute;
-    const border_inited_execute =
-      options.border_inited_execute?.(initedContextVars.create) ??
-      modePresets.show.createInitedExecute(initedContextVars.create);
+    const [bufnr, borderBufnr] = await floatingModule.create.call(
+      options.name ?? '',
+      initedExecute,
+      options.hasBorderBuf ?? true,
+      borderInitedExecute,
+    );
 
-    const [bufnr, borderBufnr] = await floatingModule.create.call({
-      ...options,
-      inited_execute,
-      border_inited_execute,
-    });
-    return new FloatingWindow(bufnr, borderBufnr ?? undefined, options, mode);
+    const floatingUtil = new FloatingUtil(borderSrcId);
+
+    return new FloatingWindow(
+      bufnr,
+      borderBufnr ?? undefined,
+      options,
+      mode,
+      floatingUtil,
+    );
   }
 
-  private disposables: Disposable[] = [];
+  buffer: Buffer;
+  borderBuffer?: Buffer;
+  nvim = workspace.nvim;
+
+  protected disposables: Disposable[] = [];
 
   protected constructor(
     public bufnr: number,
     public borderBufnr: number | undefined,
     public createOptions: FloatingWindow.CreateOptions,
-    public mode: floatingModule.Mode,
+    public mode: FloatingWindow.Mode,
+    protected util: FloatingUtil,
   ) {
     this.nvim = workspace.nvim;
     this.buffer = this.nvim.createBuffer(bufnr);
@@ -157,138 +254,221 @@ export class FloatingWindow implements Disposable {
     }
   }
 
-  protected getDefaultOpenOptions(options: FloatingWindow.OpenOptions) {
-    let inited_execute = options.inited_execute?.(initedContextVars.open) ?? '';
-    inited_execute =
-      modePresets[this.mode].openInitedExecute(initedContextVars.open) +
+  protected getInitedExecute(
+    options: FloatingWindow.OpenOptions,
+  ): [initedExecute: string, borderInitedExecute: string] {
+    let initedExecute =
+      options.initedExecute?.(FloatingWindow.initedContextVars.open) ?? '';
+    initedExecute =
+      FloatingWindow.modePresets[this.mode].openInitedExecute(
+        FloatingWindow.initedContextVars.open,
+      ) +
       '\n' +
-      inited_execute;
-    const padding_inited_execute =
-      options.padding_inited_execute?.(initedContextVars.open) ??
-      modePresets.show.openInitedExecute(initedContextVars.open);
-    const border_inited_execute =
-      options.border_inited_execute?.(initedContextVars.open) ??
-      modePresets.show.openInitedExecute(initedContextVars.open);
+      initedExecute;
+    const borderInitedExecute =
+      options.borderInitedExecute?.(FloatingWindow.initedContextVars.open) ??
+      FloatingWindow.modePresets.show.openInitedExecute(
+        FloatingWindow.initedContextVars.open,
+      );
+    return [initedExecute, borderInitedExecute];
+  }
 
-    const modifiable =
-      options.modifiable ??
-      (this.mode ? modePresets[this.mode].modifiable : undefined) ??
-      false;
-    const focus =
+  protected getFocus(options: FloatingWindow.OpenOptions) {
+    return (
       options.focus ??
-      (this.mode ? modePresets[this.mode].focus : undefined) ??
-      false;
+      (this.mode ? FloatingWindow.modePresets[this.mode].focus : undefined) ??
+      false
+    );
+  }
 
-    const border = options.border?.map((b) => (typeof b === 'boolean' ? 1 : b));
+  protected getModifiable(options: FloatingWindow.OpenOptions) {
+    return (
+      options.modifiable ??
+      (this.mode
+        ? FloatingWindow.modePresets[this.mode].modifiable
+        : undefined) ??
+      false
+    );
+  }
 
-    const finalOptions = {
-      winhl: 'CocHelperNormalFloat',
-      border_winhl: 'CocHelperNormalFloatBorder',
-      relative: 'editor',
-      ...options,
-      inited_execute,
-      padding_inited_execute,
-      border_inited_execute,
-      border_bufnr: this.borderBufnr,
-      winid: this.win?.id,
-      border_winid: this.borderWin?.id,
-      modifiable,
-      border,
-      focus,
-      store_cursor_position: this.store_cursor_position,
-    };
-    return Object.entries(finalOptions).reduce((o, [key, val]) => {
-      if (val === undefined) {
-        return o;
-      } else {
-        o[key] = val;
-        return o;
+  async openNotifier(options: FloatingWindow.OpenOptions) {
+    if (options.width <= 0 || options.height <= 0) {
+      return Notifier.noop();
+    }
+
+    const notifiers: Notifier[] = [];
+    notifiers.push(this.closeNotifier());
+
+    const ctx = await this.util.createContext(options);
+    const [initedExecute, borderInitedExecute] = this.getInitedExecute(options);
+    const [winConfig, borderWinConfig] = this.util.winConfig(ctx, options);
+    const modifiable = this.getModifiable(options);
+
+    if (options.borderOnly && borderWinConfig) {
+      notifiers.push(
+        floatingModule.open.callNotifier(
+          this.bufnr,
+          borderWinConfig,
+          borderInitedExecute,
+          null,
+          null,
+          '',
+          false,
+          this.util.nvimWinHl(options),
+        ),
+      );
+      notifiers.push(
+        this.util.renderBorderNotifier(
+          this.buffer,
+          ctx,
+          options,
+          borderWinConfig,
+        ),
+      );
+    } else {
+      notifiers.push(
+        floatingModule.open.callNotifier(
+          this.bufnr,
+          winConfig,
+          initedExecute,
+          this.borderBufnr ?? null,
+          borderWinConfig ?? null,
+          borderInitedExecute,
+          this.getFocus(options),
+          this.util.nvimWinHl(options),
+        ),
+      );
+    }
+
+    if (workspace.isNvim) {
+      if (this.borderBuffer && borderWinConfig) {
+        notifiers.push(
+          this.util.renderBorderNotifier(
+            this.borderBuffer,
+            ctx,
+            options,
+            borderWinConfig,
+          ),
+        );
       }
-    }, {} as floatingModule.OpenOptions);
+    }
+
+    notifiers.push(
+      Notifier.create(() => {
+        this.buffer.setOption('modifiable', true, true);
+        this.buffer.setOption('readonly', false, true);
+        if (options.lines) {
+          void this.buffer.setLines(options.lines, { start: 0, end: -1 }, true);
+        }
+        if (!modifiable) {
+          this.buffer.setOption('modifiable', false, true);
+          this.buffer.setOption('readonly', true, true);
+        }
+        if (options.highlights) {
+          for (const hl of options.highlights) {
+            void this.buffer.addHighlight(hl);
+          }
+        }
+        if (workspace.isVim) {
+          this.nvim.command('redraw!', true);
+        }
+      }),
+      Notifier.create(() => {
+        if (options.filetype) {
+          this.buffer.setOption('&filetype', options.filetype, true);
+        }
+      }),
+    );
+
+    return Notifier.combine(notifiers);
   }
 
   async open(options: FloatingWindow.OpenOptions) {
-    await this.close();
+    await (await this.openNotifier(options)).run();
+  }
 
-    if (options.width <= 0 || options.height <= 0) {
-      return;
-    }
-
-    const finalOptions = this.getDefaultOpenOptions(options);
-
-    const [
-      winid,
-      borderWinid,
-      store_cursor_position,
-    ] = await floatingModule.open.call(this.bufnr, finalOptions);
-
-    this.nvim.pauseNotification();
-    this.buffer.setOption('modifiable', true, true);
-    this.buffer.setOption('readonly', false, true);
-    if (options.lines) {
-      void this.buffer.setLines(options.lines, { start: 0, end: -1 }, true);
-    }
-    if (!finalOptions.modifiable) {
-      this.buffer.setOption('modifiable', false, true);
-      this.buffer.setOption('readonly', true, true);
-    }
-    if (options.highlights) {
-      for (const hl of options.highlights) {
-        void this.buffer.addHighlight(hl);
+  async resumeNotifier(options: FloatingWindow.OpenOptions) {
+    const ctx = await this.util.createContext(options);
+    const [winConfig, borderWinConfig] = this.util.winConfig(ctx, options);
+    return Notifier.create(() => {
+      floatingModule.resume.callNotify(
+        this.bufnr,
+        winConfig,
+        this.borderBufnr ?? null,
+        borderWinConfig ?? null,
+        this.getFocus(options),
+      );
+      if (this.borderBuffer && borderWinConfig) {
+        this.util
+          .renderBorderNotifier(
+            this.borderBuffer,
+            ctx,
+            options,
+            borderWinConfig,
+          )
+          .notify();
       }
-    }
-    if (workspace.isVim) {
-      this.nvim.command('redraw!', true);
-    }
-    await this.nvim.resumeNotification();
-
-    this.store_cursor_position = store_cursor_position ?? undefined;
-    this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid
-      ? this.nvim.createWindow(borderWinid)
-      : undefined;
+      if (workspace.isVim) {
+        this.nvim.command('redraw!', true);
+      }
+    });
   }
 
   async resume(options: FloatingWindow.OpenOptions) {
-    const finalOptions = this.getDefaultOpenOptions(options);
+    await (await this.resumeNotifier(options)).run();
+  }
 
-    const [winid, borderWinid] = await floatingModule.resume.call(
-      this.bufnr,
-      finalOptions,
+  async resizeNotifier(options: FloatingWindow.OpenOptions) {
+    const ctx = await this.util.createContext(options);
+    const [winConfig, borderWinConfig] = this.util.winConfig(
+      ctx,
+      options,
+      false,
     );
-    if (workspace.isVim) {
-      await this.nvim.command('redraw!');
-    }
-    this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid
-      ? this.nvim.createWindow(borderWinid)
-      : undefined;
+
+    return Notifier.create(() => {
+      floatingModule.update.callNotify(
+        this.bufnr,
+        winConfig,
+        this.borderBufnr ?? null,
+        borderWinConfig ?? null,
+      );
+      if (this.borderBuffer && borderWinConfig) {
+        this.util
+          .renderBorderNotifier(
+            this.borderBuffer,
+            ctx,
+            options,
+            borderWinConfig,
+          )
+          .notify();
+      }
+      if (workspace.isVim) {
+        this.nvim.command('redraw!', true);
+      }
+    });
   }
 
   async resize(options: FloatingWindow.OpenOptions) {
-    const finalOptions = this.getDefaultOpenOptions(options);
+    await (await this.resizeNotifier(options)).run();
+  }
 
-    const [winid, borderWinid] = await floatingModule.resize.call(
-      this.bufnr,
-      finalOptions,
-    );
-    if (workspace.isVim) {
-      await this.nvim.command('redraw!');
-    }
-    this.win = this.nvim.createWindow(winid);
-    this.borderWin = borderWinid
-      ? this.nvim.createWindow(borderWinid)
-      : undefined;
+  async win() {
+    const winid = await floatingModule.winid.call(this.bufnr);
+    return winid ? this.nvim.createWindow(winid) : undefined;
+  }
+
+  async borderWin() {
+    const borderWinid = await floatingModule.winid.call(this.bufnr);
+    return borderWinid ? this.nvim.createWindow(borderWinid) : undefined;
+  }
+
+  closeNotifier() {
+    return floatingModule.close.callNotifier(this.bufnr);
   }
 
   async close() {
-    if (workspace.isNvim) {
-      await utilModule.closeWinByBufnr.call([this.bufnr]);
-    } else {
-      if (this.win) {
-        await this.nvim.call('popup_close', [this.win.id]).catch(() => {});
-      }
-    }
+    await this.closeNotifier().run();
   }
 
   dispose() {

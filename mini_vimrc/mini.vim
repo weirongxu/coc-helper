@@ -9,7 +9,8 @@ let g:coc_data_home = expand('<sfile>:h') . '/data_home'
 let &runtimepath .= ',' . expand('<sfile>:h:h')
 
 let mapleader = "\<Space>"
-nmap <Leader>t :CocCommand testHelper<CR>
+nmap <Leader>t :CocCommand testHelper-floating<CR>
+nmap <Leader>i :CocCommand testHelper-multi-floating<CR>
 
 set hidden
 set cmdheight=2

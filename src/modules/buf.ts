@@ -1,9 +1,9 @@
 import { VimModule } from '../VimModule';
 import { workspace } from 'coc.nvim';
 
-const isNvim = workspace.isNvim;
-
 export const bufModule = VimModule.create('buf', (m) => {
+  const isNvim = workspace.isNvim;
+
   const createByName = m.fn<[string], number>(
     'create_by_name',
     ({ name }) => `

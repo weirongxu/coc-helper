@@ -30,11 +30,14 @@ import { VimModule } from 'coc-helper';
 // create module
 const utilMod = VimModule.create('util', (mod) => {
   // internal function
-  const screenPos = mod.fn<[nr: number], [row: number, col: number]>('screen_pos', ({ name }) => `
-    function! ${name}(nr)
+  const screenPos = mod.fn<[nr: number], [row: number, col: number]>(
+    'screen_pos',
+    ({ name }) => `
+      function! ${name}(nr)
       return win_screenpos(a:nr)
-    endfunction
-  `)
+      endfunction
+    `,
+  );
 
   return {
     // export function
@@ -93,8 +96,8 @@ await floatWin.resize({
   border: [],
   padding: [],
   modifiable: true,
-  winhl: 'WinHL',
-  border_winhl: 'WinHLB',
+  winHl: 'WinHL',
+  borderWinHl: 'WinHLB',
   focus: false,
   filetype: 'test',
 });
