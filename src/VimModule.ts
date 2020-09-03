@@ -1,13 +1,11 @@
 import { workspace } from 'coc.nvim';
-import Pkg from '../package.json';
 import { Notifier } from './notifier';
-import { outputChannel, helperOnError } from './util';
+import { outputChannel, helperOnError, versionName } from './util';
 
-const version = Pkg.version.replace(/[.-]/g, '_');
 const pid = process.pid;
-const globalKey = `coc_helper_module_p${pid}_${version}`;
+const globalKey = `coc_helper_module_p${pid}_${versionName}`;
 const globalVariable = `g:${globalKey}`;
-const callFunc = `CocHelperCall_${version}`;
+const callFunc = `CocHelperCall_${versionName}`;
 
 const globalModuleIdKey = '__coc_helper_module_max_id';
 function getModuleId(): number {

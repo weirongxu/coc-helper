@@ -1,12 +1,12 @@
 import { VimModule } from '../VimModule';
 import { workspace } from 'coc.nvim';
-import { FloatingWindow } from '../FloatingWindow';
+import { FloatingUtil } from '../FloatingUtil';
 
 export const utilModule = VimModule.create('util', (m) => {
   const isNvim = workspace.isNvim;
 
   return {
-    globalCursorPosition: m.fn<[], FloatingWindow.Position>(
+    globalCursorPosition: m.fn<[], FloatingUtil.Position>(
       'global_cursor_position',
       ({ name }) => `
         function! ${name}()
@@ -62,6 +62,22 @@ export const utilModule = VimModule.create('util', (m) => {
           endfunction
         endif
       `,
+    ),
+    runCocCmd: m.fn<[name: string, ...args: unknown[]], unknown>(
+      'run_coc_cmd',
+      ({ name }) => `
+      function! ${name}(name, ...) abort
+        return call('CocAction', extend(['runCommand', a:name], a:000))
+      endfunction
+    `,
+    ),
+    runCocCmdAsync: m.fn<[name: string, ...args: unknown[]], unknown>(
+      'run_coc_cmd_async',
+      ({ name }) => `
+      function! ${name}(name, ...) abort
+        return call('CocActionAsync', extend(['runCommand', a:name], a:000))
+      endfunction
+    `,
     ),
   };
 });

@@ -1,5 +1,10 @@
 import { workspace, OutputChannel } from 'coc.nvim';
 import util from 'util';
+import Pkg from '../package.json';
+
+export const version = Pkg.version;
+
+export const versionName = version.replace(/[.-]/g, '_');
 
 export const outputChannel = workspace.createOutputChannel('coc-helper');
 

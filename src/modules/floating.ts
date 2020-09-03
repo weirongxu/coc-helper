@@ -1,11 +1,11 @@
 import { workspace } from 'coc.nvim';
-import { FloatingWindow } from '../FloatingWindow';
+import { FloatingUtil } from '../FloatingUtil';
 import { VimModule } from '../VimModule';
 import { bufModule } from './buf';
 
 export const floatingModule = VimModule.create('float', (m) => {
-  type VimWinConfig = FloatingWindow.VimWinConfig;
-  type NvimWinConfig = FloatingWindow.NvimWinConfig;
+  type VimWinConfig = FloatingUtil.VimWinConfig;
+  type NvimWinConfig = FloatingUtil.NvimWinConfig;
   const isNvim = workspace.isNvim;
 
   const initExecute = m.fn<[ctx: object, initedExecute: string], void>(

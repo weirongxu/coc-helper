@@ -251,6 +251,8 @@ export class FloatingUtil {
       zindex: options.borderOnly ?? false ? 1 : 100,
       minwidth: width,
       minheight: height,
+      maxwidth: width,
+      maxheight: height,
     };
     if (options.relative === 'center') {
       config.pos = 'center';
@@ -282,8 +284,12 @@ export class FloatingUtil {
     const leftOffset = options.leftOffset ?? 0;
     config.line += topOffset;
     config.col += leftOffset;
-    config.maxwidth = options.maxWidth ?? options.width;
-    config.maxheight = options.maxHeight ?? options.height;
+    if (options.maxWidth) {
+      config.maxwidth = options.maxWidth;
+    }
+    if (options.maxHeight) {
+      config.maxheight = options.maxHeight;
+    }
     config.highlight = options.winHl ?? defaultWinHl;
     if (options.padding) {
       config.padding = options.padding;

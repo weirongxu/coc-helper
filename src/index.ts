@@ -8,14 +8,27 @@ export * from './MultiFloatingWindow';
 export * from './notifier';
 export * from './util';
 export * from './JestHelper';
+export * from './events';
 
 import { VimModule } from './VimModule';
 import { FloatingWindow } from './FloatingWindow';
 import { displayHeight, sleep } from './util';
 import { MultiFloatingWindow } from './MultiFloatingWindow';
+import { registerInternalEvents } from './events';
 
-export async function activateHelper(context: ExtensionContext) {
-  await VimModule.init();
+export async function activateHelper(
+  context: ExtensionContext,
+  options: Partial<{
+    vimModule: boolean;
+    events: boolean;
+  }> = {},
+) {
+  if (options.vimModule ?? true) {
+    await VimModule.init();
+  }
+  if (options.events ?? false) {
+    await registerInternalEvents(context);
+  }
   try {
     await workspace.nvim.command(
       'hi default link CocHelperNormalFloatNC CocHelperNormalFloat',
