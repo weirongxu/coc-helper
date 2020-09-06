@@ -1,4 +1,4 @@
-import { workspace, OutputChannel } from 'coc.nvim';
+import { workspace, OutputChannel, MapMode } from 'coc.nvim';
 import util from 'util';
 import Pkg from '../package.json';
 
@@ -82,12 +82,21 @@ export function byteLength(str: string): number {
 export async function displayHeight(
   width: number,
   lines: string[],
-  position?: [line: number, column: number],
+  /**
+   * line is 1-index, column is 0-index
+   */
+  cursor?: [line: number, column: number],
+  mode: MapMode = 'n',
 ) {
   const heightGroup = await Promise.all(
     lines.map(async (l, idx) => {
       let strwidth: number = await workspace.nvim.call('strdisplaywidth', [l]);
-      if (position?.[0] === idx && position[1] > strwidth) {
+      if (
+        mode === 'i' &&
+        cursor &&
+        cursor[0] - 1 === idx &&
+        cursor[1] + 1 >= strwidth
+      ) {
         strwidth += 1;
       }
       return Math.ceil(strwidth / width);

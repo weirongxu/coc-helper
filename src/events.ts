@@ -11,8 +11,6 @@ type EventResult = void | Promise<void>;
 type EventListener = (...args: any[]) => EventResult;
 type BufEventListener = (bufnr: number) => EventResult;
 
-const augroupName = `CocHelperInternal_${versionName}`;
-
 export class VimEventEmitter<Events extends Record<string, EventListener>> {
   listenersMap = new Map<keyof Events, EventListener[]>();
 
@@ -82,39 +80,49 @@ export class VimEventEmitter<Events extends Record<string, EventListener>> {
 export const helperEvents = new VimEventEmitter<{
   BufDelete: BufEventListener;
   BufWipeout: BufEventListener;
-  QuitPre: () => EventResult;
 }>(helperOnError);
 
-export async function registerInternalEvents(context: ExtensionContext) {
-  const cmdName = 'coc-helper.internal.didVimEvent';
-  await eventsModule.activate.call([
-    {
-      cmdName,
-      eventExpr: 'BufDelete *',
-      argExprs: ['BufDelete', '+expand("<abuf>")'],
-    },
-    {
-      cmdName,
-      eventExpr: 'BufWipeout *',
-      argExprs: ['BufWipeout', '+expand("<abuf>")'],
-    },
-    {
-      cmdName,
-      eventExpr: 'QuitPre',
-      argExprs: ['QuitPre'],
-    },
-  ]);
+export async function registerHelperEvents(context: ExtensionContext) {
+  await registerVimEvents(
+    context,
+    helperEvents,
+    [
+      {
+        event: 'BufDelete',
+        eventExpr: 'BufDelete *',
+        argExprs: ["+expand('<abuf>')"],
+      },
+      {
+        event: 'BufWipeout',
+        eventExpr: 'BufWipeout *',
+        argExprs: ["+expand('<abuf>')"],
+      },
+    ],
+    `CocHelperInternal_${versionName}`,
+    'coc-helper.internal.didVimEvent',
+  );
+}
+
+export async function registerVimEvents(
+  context: ExtensionContext,
+  events: VimEventEmitter<any>,
+  activateEvents: eventsModule.ActivateEvent[],
+  augroupName: string,
+  commandName: string,
+) {
+  await eventsModule.activate.call(augroupName, commandName, activateEvents);
+
   context.subscriptions.push(
     Disposable.create(async () => {
-      await eventsModule.deactivate.call();
+      await eventsModule.deactivate.call(augroupName);
     }),
   );
 
   context.subscriptions.push(
     commands.registerCommand(
-      'coc-helper.internal.didVimEvent',
+      commandName,
       helperAsyncCatch((event: any, ...args: any[]) =>
-        helperEvents.fire(event, ...args),
+        events.fire(event, ...args),
       ),
       undefined,
       true,
@@ -124,53 +132,83 @@ export async function registerInternalEvents(context: ExtensionContext) {
 
 export namespace eventsModule {
   export type ActivateEvent = {
-    /**
-     * command name
-     */
-    cmdName: string;
+    event: string;
     eventExpr: string;
     argExprs?: string[];
+    /**
+     * @default
+     */
+    async?: boolean;
   };
 }
 
 export const eventsModule = VimModule.create('events', (m) => {
-  const activate = m.fn<[activateEvents: string], void>(
+  const activate = m.fn<[augroupName: string, autocmdEvents: string[]], void>(
     'activate',
     ({ name }) => `
-      function! ${name}(activate_events) abort
-        augroup ${augroupName}
+      function! ${name}(augroup_name, autocmd_events) abort
+        execute 'augroup ' . a:augroup_name
           autocmd!
-          execute a:activate_events
+          for autocmd_event in a:autocmd_events
+            execute autocmd_event
+          endfor
         augroup END
       endfunction
     `,
   );
 
-  function getActivateEvents(activateEvents: eventsModule.ActivateEvent[]) {
-    return activateEvents
-      .map(
-        (e) =>
-          `autocmd ${e.eventExpr} call ${utilModule.runCocCmdAsync.name}(${[
-            `'${e.cmdName}'`,
-            ...(e.argExprs ?? []),
-          ].join(',')})`,
-      )
-      .join('\n');
+  function getActivateEvents(
+    commandName: string,
+    activateEvents: eventsModule.ActivateEvent[],
+  ) {
+    return activateEvents.map((e) => {
+      const args = `${[
+        `'${commandName}'`,
+        `'${e.event}'`,
+        ...(e.argExprs ?? []),
+      ].join(', ')}`;
+      return `autocmd ${e.eventExpr} call ${
+        e.async === false
+          ? utilModule.runCocCmd.inlineCall(args)
+          : utilModule.runCocCmdAsync.inlineCall(args)
+      }`;
+    });
   }
   return {
     activate: {
-      call: (activateEvents: eventsModule.ActivateEvent[]) =>
-        activate.call(getActivateEvents(activateEvents)),
-      callNotify: (activateEvents: eventsModule.ActivateEvent[]) =>
-        activate.callNotify(getActivateEvents(activateEvents)),
-      callNotifier: (activateEvents: eventsModule.ActivateEvent[]) =>
-        activate.callNotifier(getActivateEvents(activateEvents)),
+      call: (
+        augroupName: string,
+        commandName: string,
+        activateEvents: eventsModule.ActivateEvent[],
+      ) =>
+        activate.call(
+          augroupName,
+          getActivateEvents(commandName, activateEvents),
+        ),
+      callNotify: (
+        augroupName: string,
+        commandName: string,
+        activateEvents: eventsModule.ActivateEvent[],
+      ) =>
+        activate.callNotify(
+          augroupName,
+          getActivateEvents(commandName, activateEvents),
+        ),
+      callNotifier: (
+        augroupName: string,
+        commandName: string,
+        activateEvents: eventsModule.ActivateEvent[],
+      ) =>
+        activate.callNotifier(
+          augroupName,
+          getActivateEvents(commandName, activateEvents),
+        ),
     },
-    deactivate: m.fn<[], void>(
+    deactivate: m.fn<[augroupName: string], void>(
       'deactivate',
       ({ name }) => `
-        function! ${name}() abort
-          augroup ${augroupName}
+        function! ${name}(augroup_name) abort
+          execute 'augroup ' . a:augroup_name
             autocmd!
           augroup END
         endfunction

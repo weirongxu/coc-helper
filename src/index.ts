@@ -14,20 +14,26 @@ import { VimModule } from './VimModule';
 import { FloatingWindow } from './FloatingWindow';
 import { displayHeight, sleep } from './util';
 import { MultiFloatingWindow } from './MultiFloatingWindow';
-import { registerInternalEvents } from './events';
+import { helperEvents, registerHelperEvents } from './events';
 
 export async function activateHelper(
   context: ExtensionContext,
-  options: Partial<{
-    vimModule: boolean;
-    events: boolean;
-  }> = {},
+  options: {
+    /**
+     * @default true
+     */
+    vimModule?: boolean;
+    /**
+     * @default false
+     */
+    events?: boolean;
+  } = {},
 ) {
   if (options.vimModule ?? true) {
     await VimModule.init();
   }
   if (options.events ?? false) {
-    await registerInternalEvents(context);
+    await registerHelperEvents(context);
   }
   try {
     await workspace.nvim.command(
@@ -43,7 +49,12 @@ export async function activateHelper(
  * Test
  */
 export async function activate(context: ExtensionContext) {
-  await activateHelper(context);
+  await activateHelper(context, { events: true });
+
+  helperEvents.on('BufDelete', (bufnr) => {
+    // eslint-disable-next-line no-restricted-properties
+    workspace.showMessage('buffer delete ' + bufnr);
+  });
 
   await workspace.nvim.command(
     'hi CocHelperNormalFloat ctermbg=Red guibg=#aa0000',
@@ -104,7 +115,10 @@ export async function activate(context: ExtensionContext) {
   });
 
   const multiFloatWin = await MultiFloatingWindow.create({
-    wins: [{ mode: 'show' }, { mode: 'base' }],
+    wins: {
+      prompt: { mode: 'show' },
+      input: { mode: 'base' },
+    },
   });
   commands.registerCommand('testHelper-multi-floating', async () => {
     const width = 10;
@@ -112,11 +126,11 @@ export async function activate(context: ExtensionContext) {
     const promptHeight = await displayHeight(width, [promptText]);
     const inputText = '/home/users/repos';
     let inputHeight = await displayHeight(width, [inputText]);
-    events.on('TextChanged', async (bufnr) => {
-      if (multiFloatWin.floatWins[1].bufnr !== bufnr) {
+    events.on('TextChangedI', async (bufnr) => {
+      const floatWin = multiFloatWin.floatWinDict.input;
+      if (floatWin.bufnr !== bufnr) {
         return;
       }
-      const floatWin = multiFloatWin.floatWins[1];
       const win = await floatWin.win();
       if (!win) {
         return;
@@ -125,7 +139,7 @@ export async function activate(context: ExtensionContext) {
       const width = await win.width;
       const height = await win.height;
       const lines = await floatWin.buffer.getLines();
-      const newHeight = await displayHeight(width, lines, cursor);
+      const newHeight = await displayHeight(width, lines, cursor, 'i');
       if (newHeight !== height) {
         inputHeight = newHeight;
         await resize();
@@ -142,15 +156,15 @@ export async function activate(context: ExtensionContext) {
       padding: [],
       modifiable: true,
       filetype: 'test',
-      wins: [
-        {
+      wins: {
+        prompt: {
           top: 0,
           left: 0,
           width,
           height: promptHeight,
           lines: [promptText],
         },
-        {
+        input: {
           top: promptHeight,
           left: 0,
           width,
@@ -164,7 +178,7 @@ export async function activate(context: ExtensionContext) {
             endif
           `,
         },
-      ],
+      },
     });
 
     const resize = async () => {

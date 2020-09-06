@@ -190,6 +190,7 @@ export class FloatingUtil {
     options: FloatingWindow.OpenOptions,
     updateCursorPosition: boolean,
   ) {
+    const [top, left] = [options.top ?? 0, options.left ?? 0];
     const width = Math.max(options.width, ctx.title.width);
     const contentBox: FloatingUtil.Box = [0, 0, width, options.height];
     const paddingBox = this.changeBoxByEdges(contentBox, ctx.padding);
@@ -212,7 +213,7 @@ export class FloatingUtil {
           cursorPosition,
         );
       } else {
-        fullPos = [options.top, options.left];
+        fullPos = [top, left];
       }
       this.storeCursorPosition = cursorPosition;
     }
@@ -240,8 +241,8 @@ export class FloatingUtil {
     updateCursorPosition: boolean,
   ): FloatingUtil.VimWinConfig {
     const [top, left, width, height] = [
-      options.top,
-      options.left,
+      options.top ?? 0,
+      options.left ?? 0,
       options.width,
       options.height,
     ];
@@ -274,7 +275,7 @@ export class FloatingUtil {
           cursorPosition,
         );
       } else {
-        [config.line, config.col] = [options.top, options.left];
+        [config.line, config.col] = [top, left];
       }
       this.storeCursorPosition = cursorPosition;
       config.line += 1;
@@ -331,7 +332,7 @@ export class FloatingUtil {
       col: contentBox[1] + leftOffset,
       width: contentBox[2],
       height: contentBox[3],
-      focusable: true,
+      focusable: options.focusable ?? true,
     };
     let winConfigBorder: FloatingUtil.NvimWinConfig | undefined;
     if (borderBox) {

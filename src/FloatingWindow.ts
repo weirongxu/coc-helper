@@ -33,13 +33,21 @@ export namespace FloatingWindow {
     relative?: 'center' | 'cursor' | 'cursor-around' | 'editor';
     /**
      * Top position
+     * @default 0
      */
-    top: number;
+    top?: number;
     /**
      * Left position
+     * @default 0
      */
-    left: number;
+    left?: number;
+    /**
+     * @default 0
+     */
     topOffset?: number;
+    /**
+     * @default 0
+     */
     leftOffset?: number;
     width: number;
     height: number;
@@ -79,8 +87,15 @@ export namespace FloatingWindow {
     /**
      * Focus to window
      * Neovim only
+     * @default false
      */
     focus?: boolean;
+    /**
+     * Focusable for window
+     * Neovim only
+     * @default true
+     */
+    focusable?: boolean;
     lines?: string[];
     highlights?: BufferHighlight[];
     modifiable?: boolean;
@@ -245,6 +260,7 @@ export class FloatingWindow implements Disposable {
         events.on(
           'BufWinLeave',
           helperAsyncCatch(async (curBufnr) => {
+            // close border win
             if (this.borderBufnr && curBufnr === this.bufnr) {
               await utilModule.closeWinByBufnr.call([this.borderBufnr]);
             }
@@ -289,6 +305,11 @@ export class FloatingWindow implements Disposable {
         : undefined) ??
       false
     );
+  }
+
+  async opened() {
+    const win = await this.win();
+    return !!win;
   }
 
   async openNotifier(options: FloatingWindow.OpenOptions) {
@@ -340,17 +361,15 @@ export class FloatingWindow implements Disposable {
       );
     }
 
-    if (workspace.isNvim) {
-      if (this.borderBuffer && borderWinConfig) {
-        notifiers.push(
-          this.util.renderBorderNotifier(
-            this.borderBuffer,
-            ctx,
-            options,
-            borderWinConfig,
-          ),
-        );
-      }
+    if (workspace.isNvim && this.borderBuffer && borderWinConfig) {
+      notifiers.push(
+        this.util.renderBorderNotifier(
+          this.borderBuffer,
+          ctx,
+          options,
+          borderWinConfig,
+        ),
+      );
     }
 
     notifiers.push(
@@ -426,27 +445,56 @@ export class FloatingWindow implements Disposable {
       false,
     );
 
-    return Notifier.create(() => {
-      floatingModule.update.callNotify(
-        this.bufnr,
-        winConfig,
-        this.borderBufnr ?? null,
-        borderWinConfig ?? null,
+    const notifiers: Notifier[] = [];
+
+    if (options.borderOnly && borderWinConfig) {
+      notifiers.push(
+        floatingModule.update.callNotifier(
+          this.bufnr,
+          borderWinConfig,
+          null,
+          null,
+        ),
       );
-      if (this.borderBuffer && borderWinConfig) {
-        this.util
-          .renderBorderNotifier(
-            this.borderBuffer,
-            ctx,
-            options,
-            borderWinConfig,
-          )
-          .notify();
-      }
-      if (workspace.isVim) {
-        this.nvim.command('redraw!', true);
-      }
-    });
+      notifiers.push(
+        this.util.renderBorderNotifier(
+          this.buffer,
+          ctx,
+          options,
+          borderWinConfig,
+        ),
+      );
+    } else {
+      notifiers.push(
+        floatingModule.update.callNotifier(
+          this.bufnr,
+          winConfig,
+          this.borderBufnr ?? null,
+          borderWinConfig ?? null,
+        ),
+      );
+    }
+
+    if (workspace.isNvim && this.borderBuffer && borderWinConfig) {
+      notifiers.push(
+        this.util.renderBorderNotifier(
+          this.borderBuffer,
+          ctx,
+          options,
+          borderWinConfig,
+        ),
+      );
+    }
+
+    notifiers.push(
+      Notifier.create(() => {
+        if (workspace.isVim) {
+          this.nvim.command('redraw!', true);
+        }
+      }),
+    );
+
+    return Notifier.combine(notifiers);
   }
 
   async resize(options: FloatingWindow.OpenOptions) {

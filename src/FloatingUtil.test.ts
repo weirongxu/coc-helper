@@ -1,12 +1,10 @@
 import { jestHelper } from './JestHelper';
-import { FloatingWindow } from './FloatingWindow';
 import { FloatingUtil } from './FloatingUtil';
 
 jestHelper.boot();
 
-function getFloatUtil(): FloatingWindow {
-  // @ts-expect-error
-  return new FloatingUtil(0, 0, {}, 'base', 0);
+function getFloatUtil(): FloatingUtil {
+  return new FloatingUtil(0);
 }
 
 function getCtx(): FloatingUtil.Context {
@@ -28,7 +26,6 @@ function getCtx(): FloatingUtil.Context {
 test('getCenterPos', () => {
   const f = getFloatUtil();
   const ctx = getCtx();
-  // @ts-expect-error
   const pos = f.getCenterPos(ctx, [3, 3, 9, 9]);
   expect(pos).toEqual([20, 20]);
 });
@@ -37,22 +34,16 @@ test('getPosForAround', () => {
   const f = getFloatUtil();
   const ctx = getCtx();
   let pos: FloatingUtil.Position;
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [0, 0]);
   expect(pos).toEqual([1, 0]);
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [41, 0]);
   expect(pos).toEqual([32, 0]);
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [0, 41]);
   expect(pos).toEqual([1, 33]);
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [41, 41]);
   expect(pos).toEqual([32, 33]);
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [0, 0], true);
   expect(pos).toEqual([1, 0]);
-  // @ts-expect-error
   pos = f.getPosForAround(ctx, [9, 9], [10, 10], true);
   expect(pos).toEqual([1, 10]);
 });
@@ -60,19 +51,14 @@ test('getPosForAround', () => {
 test('extendEdges', () => {
   const f = getFloatUtil();
   let edges: FloatingUtil.Edges;
-  // @ts-expect-error
   edges = f.extendEdges(undefined);
   expect(edges).toEqual([0, 0, 0, 0]);
-  // @ts-expect-error
   edges = f.extendEdges([]);
   expect(edges).toEqual([1, 1, 1, 1]);
-  // @ts-expect-error
   edges = f.extendEdges([2]);
   expect(edges).toEqual([2, 2, 2, 2]);
-  // @ts-expect-error
   edges = f.extendEdges([2, 1]);
   expect(edges).toEqual([2, 1, 2, 1]);
-  // @ts-expect-error
   edges = f.extendEdges([3, 2, 1]);
   expect(edges).toEqual([3, 2, 1, 2]);
 });
@@ -80,10 +66,8 @@ test('extendEdges', () => {
 test('changeBoxByEdge', () => {
   const f = getFloatUtil();
   let box: FloatingUtil.Box;
-  // @ts-expect-error
   box = f.changeBoxByEdges([1, 2, 3, 4], [1, 1, 1, 1]);
   expect(box).toEqual([0, 1, 5, 6]);
-  // @ts-expect-error
   box = f.changeBoxByEdgesList(
     [1, 2, 3, 4],
     [
@@ -92,9 +76,62 @@ test('changeBoxByEdge', () => {
     ],
   );
   expect(box).toEqual([-1, 0, 7, 8]);
-  // @ts-expect-error
   box = f.changeBoxByEdges([1, 2, 3, 4], [1, 3, 3, 2]);
   expect(box).toEqual([0, 0, 8, 8]);
 });
 
-// TODO test getBoxSizes
+test('getBoxSizes', () => {
+  const f = getFloatUtil();
+  let box: {
+    contentBox: FloatingUtil.Box;
+    paddingBox: FloatingUtil.Box;
+    borderBox: FloatingUtil.Box;
+  };
+  const ctx = getCtx();
+
+  ctx.border = [0, 0, 0, 0];
+  ctx.padding = [0, 0, 0, 0];
+  box = f.getBoxSizes(
+    ctx,
+    {
+      top: 0,
+      left: 0,
+      width: 100,
+      height: 100,
+    },
+    true,
+  );
+  expect(box.borderBox).toEqual([0, 0, 100, 100]);
+  expect(box.contentBox).toEqual([0, 0, 100, 100]);
+
+  ctx.border = [1, 1, 1, 1];
+  ctx.padding = [0, 0, 0, 0];
+  box = f.getBoxSizes(
+    ctx,
+    {
+      top: 0,
+      left: 0,
+      width: 100,
+      height: 100,
+    },
+    true,
+  );
+  expect(box.borderBox).toEqual([0, 0, 102, 102]);
+  expect(box.contentBox).toEqual([1, 1, 100, 100]);
+
+  ctx.border = [1, 1, 1, 1];
+  ctx.padding = [1, 1, 1, 1];
+  box = f.getBoxSizes(
+    ctx,
+    {
+      top: 0,
+      left: 0,
+      width: 100,
+      height: 100,
+    },
+    true,
+  );
+  expect(box.borderBox).toEqual([0, 0, 104, 104]);
+  expect(box.paddingBox).toEqual([1, 1, 102, 102]);
+  expect(box.contentBox).toEqual([2, 2, 100, 100]);
+});
