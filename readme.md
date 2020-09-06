@@ -103,6 +103,68 @@ await floatWin.resize({
 });
 ```
 
+[More complete example](./src/index.ts)
+
+### MultiFloatingWindow
+
+Create the multi floating window.
+
+```typescript
+import { MultiFloatingWindow, sleep } from 'coc-helper';
+
+// create
+const multiFloatWin = await MultiFloatingWindow.create({
+  wins: {
+    prompt: { mode: 'show' },
+    input: { mode: 'base' },
+  },
+});
+const width = 10;
+// open
+await multiFloatWin.open({
+  relative: 'cursor-around',
+  top: 0,
+  left: 0,
+  title: 'test',
+  width,
+  border: [],
+  padding: [],
+  modifiable: true,
+  filetype: 'test',
+  wins: {
+    prompt: {
+      top: 0,
+      left: 0,
+      width,
+      height: 1,
+      lines: ['prompt:'],
+      highlights: [
+        {
+          line: 0,
+          srcId: 0,
+          colEnd: -1,
+          colStart: 0,
+          hlGroup: 'Question',
+        },
+      ],
+    },
+    input: {
+      top: 1,
+      left: 0,
+      width,
+      height: 1,
+      focus: true,
+      modifiable: true,
+    },
+  },
+});
+await sleep(2000);
+// resize
+await multiFloatWin.resize(...);
+```
+
+[More complete example](./src/index.ts)
+
 ### Notifier
 
 Combine the notify of coc.nvim

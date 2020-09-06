@@ -32,7 +32,7 @@ export async function activateHelper(
   if (options.vimModule ?? true) {
     await VimModule.init();
   }
-  if (options.events ?? false) {
+  if (options.events ?? true) {
     await registerHelperEvents(context);
   }
   try {
@@ -162,6 +162,15 @@ export async function activate(context: ExtensionContext) {
           left: 0,
           width,
           height: promptHeight,
+          highlights: [
+            {
+              line: 0,
+              srcId: 0,
+              colEnd: -1,
+              colStart: 0,
+              hlGroup: 'Question',
+            },
+          ],
           lines: [promptText],
         },
         input: {
