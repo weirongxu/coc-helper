@@ -4,4 +4,3 @@ module.exports = {
   globalSetup: './tests/jest-setup.js',
   testPathIgnorePatterns: ['/node_modules/', '/tests'],
 };
-

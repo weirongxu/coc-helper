@@ -166,8 +166,8 @@ export class FloatingWindow implements Disposable {
       modifiable: false,
       createInitedExecute: (ctx) => `
         ${FloatingWindow.modePresets.base.createInitedExecute(ctx)}
-        call setbufvar(${ctx.bufnr}, '&undofile', 0)
-        call setbufvar(${ctx.bufnr}, '&undolevels', -1)
+        " call setbufvar(${ctx.bufnr}, '&undofile', 0)
+        " call setbufvar(${ctx.bufnr}, '&undolevels', -1)
 
         call setbufvar(${ctx.bufnr}, '&modifiable', 0)
         call setbufvar(${ctx.bufnr}, '&modified', 0)
