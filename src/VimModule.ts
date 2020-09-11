@@ -16,6 +16,10 @@ function getModuleId(): number {
   return global[globalModuleIdKey];
 }
 
+function filterLineCont(content: string) {
+  return content.replace(/\n\s*\\/g, '');
+}
+
 export namespace VimModule {
   export type FnCaller<Args extends any[], R> = {
     name: string;
@@ -25,7 +29,16 @@ export namespace VimModule {
     callNotifier: (...args: Args) => Notifier;
   };
 
-  export type FnContext = { name: string };
+  export type Var<V> = {
+    name: string;
+    inline: string;
+    get: () => Promise<V>;
+    set: (expression: string) => Promise<void>;
+    setNotify: (expression: string) => void;
+    setNotifier: (expression: string) => Notifier;
+  };
+
+  export type Context = { name: string };
 }
 
 export class VimModule {
@@ -104,15 +117,15 @@ export class VimModule {
 
   fn<Args extends any[], R>(
     fnName: string,
-    getContent: (ctx: VimModule.FnContext) => string,
+    getContent: (ctx: VimModule.Context) => string,
   ): VimModule.FnCaller<Args, R> {
-    const nvim = workspace.nvim;
+    const { nvim } = workspace;
     const name = `${globalVariable}.${this.moduleKey}.${fnName}`;
     const content = getContent({ name: name });
     const debugKey = `${this.moduleKey}.${fnName}`;
     VimModule.initQueue.push(async () => {
-      outputChannel.appendLine(`declare ${debugKey}`);
-      await nvim.call('execute', [content.replace(/\n\s*\\/g, '')]);
+      outputChannel.appendLine(`declare fn ${debugKey}`);
+      await nvim.call('execute', [filterLineCont(content)]);
     });
     return {
       name,
@@ -132,6 +145,49 @@ export class VimModule {
         outputChannel.appendLine(`callNotifier ${debugKey}`);
         return Notifier.create(() => {
           nvim.call(callFunc, [this.moduleKey, fnName, args], true);
+        });
+      },
+    };
+  }
+
+  var<V>(varName: string, expression: string): VimModule.Var<V> {
+    const { nvim } = workspace;
+    const name = `${globalVariable}.${this.moduleKey}.${varName}`;
+    const debugKey = `${this.moduleKey}.${varName}`;
+
+    VimModule.initQueue.push(async () => {
+      outputChannel.appendLine(`declare var ${debugKey}`);
+      await workspace.nvim.call(
+        'execute',
+        `let ${name} = ${filterLineCont(expression)}`,
+      );
+    });
+    return {
+      name,
+      inline: name,
+      get: () => {
+        return nvim.eval(name) as Promise<V>;
+      },
+      set: async (expression: string) => {
+        await workspace.nvim.call(
+          'execute',
+          `let ${name} = ${filterLineCont(expression)}`,
+        );
+      },
+      setNotify: (expression: string) => {
+        workspace.nvim.call(
+          'execute',
+          `let ${name} = ${filterLineCont(expression)}`,
+          true,
+        );
+      },
+      setNotifier: (expression: string) => {
+        return Notifier.create(() => {
+          workspace.nvim.call(
+            'execute',
+            `let ${name} = ${filterLineCont(expression)}`,
+            true,
+          );
         });
       },
     };
