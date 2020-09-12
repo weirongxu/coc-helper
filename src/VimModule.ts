@@ -5,7 +5,8 @@ import { outputChannel, helperOnError, versionName } from './util';
 const pid = process.pid;
 const globalKey = `coc_helper_module_p${pid}_${versionName}`;
 const globalVariable = `g:${globalKey}`;
-const callFunc = `CocHelperCall_${versionName}`;
+const callFunc = `CocHelperCallFn_${versionName}`;
+const declareVar = `CocHelperCallVar_${versionName}`;
 
 const globalModuleIdKey = '__coc_helper_module_max_id';
 function getModuleId(): number {
@@ -55,16 +56,30 @@ export class VimModule {
             return call(${globalVariable}[a:module_key][a:method_name], a:args)
           catch
             let ex = v:exception
-            echom "error at " . a:module_key . "." . a:method_name
+            let msg = 'error when call ' . a:module_key . '.' . a:method_name
+            echom msg
             echom ex
-            throw ex
+            throw msg . ex
+          endtry
+        endfunction
+
+        function! ${declareVar}(module_key, var_name, expression)
+          try
+            let ${globalVariable}[a:module_key][a:var_name] = eval(a:expression)
+          catch
+            let ex = v:exception
+            let msg = 'error when declare ' . a:module_key . '.' . a:var_name
+            echom msg
+            echom ex
+            throw msg . ex
           endtry
         endfunction
       `,
     );
+
     while (VimModule.initQueue.length) {
       const fn = VimModule.initQueue.shift()!;
-      fn().catch(helperOnError);
+      await fn().catch(helperOnError);
     }
   }
 
@@ -87,11 +102,11 @@ export class VimModule {
     }
 
     VimModule.initQueue.push(async () => {
-      initedMod();
       await workspace.nvim.call(
         'execute',
         `let ${globalVariable}.${moduleKey} = {}`,
       );
+      initedMod();
     });
 
     return new Proxy(
@@ -157,10 +172,11 @@ export class VimModule {
 
     VimModule.initQueue.push(async () => {
       outputChannel.appendLine(`declare var ${debugKey}`);
-      await workspace.nvim.call(
-        'execute',
-        `let ${name} = ${filterLineCont(expression)}`,
-      );
+      await nvim.call(declareVar, [
+        this.moduleKey,
+        varName,
+        filterLineCont(expression),
+      ]);
     });
     return {
       name,
@@ -169,23 +185,24 @@ export class VimModule {
         return nvim.eval(name) as Promise<V>;
       },
       set: async (expression: string) => {
-        await workspace.nvim.call(
-          'execute',
-          `let ${name} = ${filterLineCont(expression)}`,
-        );
+        await nvim.call(declareVar, [
+          this.moduleKey,
+          varName,
+          filterLineCont(expression),
+        ]);
       },
       setNotify: (expression: string) => {
-        workspace.nvim.call(
-          'execute',
-          `let ${name} = ${filterLineCont(expression)}`,
+        nvim.call(
+          declareVar,
+          [this.moduleKey, varName, filterLineCont(expression)],
           true,
         );
       },
       setNotifier: (expression: string) => {
         return Notifier.create(() => {
-          workspace.nvim.call(
-            'execute',
-            `let ${name} = ${filterLineCont(expression)}`,
+          nvim.call(
+            declareVar,
+            [this.moduleKey, varName, filterLineCont(expression)],
             true,
           );
         });

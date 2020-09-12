@@ -1,20 +1,19 @@
-import { ExtensionContext, commands, workspace, events } from 'coc.nvim';
-export * from './VimModule';
-export * from './modules/buf';
-export * from './modules/util';
-export * from './modules/floating';
+import { commands, events, ExtensionContext, workspace } from 'coc.nvim';
+import { helperEvents, registerHelperEvents } from './events';
+import { FloatingWindow } from './FloatingWindow';
+import { MultiFloatingWindow } from './MultiFloatingWindow';
+import { displayHeight, sleep } from './util';
+import { VimModule } from './VimModule';
+export * from './events';
 export * from './FloatingWindow';
+export * from './JestHelper';
+export * from './modules/buf';
+export * from './modules/floating';
+export * from './modules/util';
 export * from './MultiFloatingWindow';
 export * from './notifier';
 export * from './util';
-export * from './JestHelper';
-export * from './events';
-
-import { VimModule } from './VimModule';
-import { FloatingWindow } from './FloatingWindow';
-import { displayHeight, sleep } from './util';
-import { MultiFloatingWindow } from './MultiFloatingWindow';
-import { helperEvents, registerHelperEvents } from './events';
+export * from './VimModule';
 
 export async function activateHelper(
   context: ExtensionContext,
@@ -150,8 +149,8 @@ export async function activate(context: ExtensionContext) {
       top: 0,
       left: 0,
       title: 'test',
-      width,
-      height: promptHeight + inputHeight,
+      // width,
+      // height: promptHeight + inputHeight,
       border: [],
       padding: [],
       modifiable: true,

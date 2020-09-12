@@ -19,7 +19,6 @@ import Plugin from 'coc.nvim/lib/plugin';
 import workspace from 'coc.nvim/lib/workspace';
 import { v4 as uuid } from 'uuid';
 import { VimCompleteItem } from 'coc.nvim/lib/types';
-import pkgDir from 'pkg-dir';
 
 process.on('uncaughtException', (err) => {
   const msg = 'Uncaught exception: ' + err.stack;
@@ -60,9 +59,9 @@ export class JestHelper extends EventEmitter {
     return this._plugin;
   }
 
-  public boot() {
+  public boot({ internal = false } = {}) {
     beforeAll(async () => {
-      await this.setup();
+      await this.setup({ internal });
     });
 
     afterAll(async () => {
@@ -74,8 +73,11 @@ export class JestHelper extends EventEmitter {
     });
   }
 
-  public async setup(): Promise<void> {
-    const testsDir = pathLib.join((await pkgDir(__dirname))!, 'tests');
+  public async setup({ internal = false } = {}): Promise<void> {
+    const testsDir = pathLib.join(
+      __dirname!,
+      internal ? '../tests' : '../../tests',
+    );
     const vimrcPath = pathLib.join(testsDir, 'vimrc');
     const proc = (this.proc = cp.spawn(
       'nvim',

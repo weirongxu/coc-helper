@@ -165,12 +165,11 @@ export class MultiFloatingWindow implements Disposable {
   }
 
   async resume(options: MultiFloatingWindow.OpenOptions) {
-    return this.batchAction('resumeNotifier', options, { reverse: true });
+    return this.batchAction('resumeNotifier', options);
   }
 
   resize(options: MultiFloatingWindow.OpenOptions) {
     return this.batchAction('resizeNotifier', options, {
-      reverse: true,
       updateCursorPosition: false,
     });
   }

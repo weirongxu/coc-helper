@@ -2,6 +2,8 @@ import { workspace, OutputChannel, MapMode } from 'coc.nvim';
 import util from 'util';
 import Pkg from '../package.json';
 
+export const isTest = process.env.NODE_ENV === 'test';
+
 export const version = Pkg.version;
 
 export const versionName = version.replace(/[.-]/g, '_');
@@ -14,10 +16,18 @@ export function genOnError(outputChannel: OutputChannel) {
       // eslint-disable-next-line no-restricted-properties
       workspace.showMessage(error.message, 'error');
       outputChannel.appendLine(error.stack ?? error.toString());
+      if (isTest) {
+        // eslint-disable-next-line no-console
+        console.error(error.stack ?? error.toString());
+      }
     } else {
       // eslint-disable-next-line no-restricted-properties
       workspace.showMessage(error, 'error');
       outputChannel.appendLine(error);
+      if (isTest) {
+        // eslint-disable-next-line no-console
+        console.error(error);
+      }
     }
   };
 }

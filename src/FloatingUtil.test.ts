@@ -1,7 +1,7 @@
 import { jestHelper } from './JestHelper';
 import { FloatingUtil } from './FloatingUtil';
 
-jestHelper.boot();
+jestHelper.boot({ internal: true });
 
 function getFloatUtil(): FloatingUtil {
   return new FloatingUtil(0);
