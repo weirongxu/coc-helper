@@ -24,7 +24,15 @@ const varTest = VimModule.create('var_test', (m) => {
 jestHelper.boot();
 
 beforeAll(async () => {
-  await VimModule.init().catch(helperOnError);
+  await VimModule.init({
+    logger: null as any,
+    globalState: null as any,
+    storagePath: '',
+    extensionPath: '',
+    subscriptions: [],
+    asAbsolutePath: () => '',
+    workspaceState: null as any,
+  }).catch(helperOnError);
 });
 
 test('fn', async () => {

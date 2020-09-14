@@ -29,7 +29,7 @@ export async function activateHelper(
   } = {},
 ) {
   if (options.vimModule ?? true) {
-    await VimModule.init();
+    await VimModule.init(context);
   }
   if (options.events ?? true) {
     await registerHelperEvents(context);

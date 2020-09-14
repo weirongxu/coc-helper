@@ -1,4 +1,4 @@
-import { workspace } from 'coc.nvim';
+import { ExtensionContext, workspace } from 'coc.nvim';
 import { Notifier } from './notifier';
 import { outputChannel, helperOnError, versionName } from './util';
 
@@ -22,6 +22,8 @@ function filterLineCont(content: string) {
 }
 
 export namespace VimModule {
+  export type InitQueueFn = (context: ExtensionContext) => void | Promise<void>;
+
   export type FnCaller<Args extends any[], R> = {
     name: string;
     inlineCall: (argsExpression?: string) => string;
@@ -43,7 +45,7 @@ export namespace VimModule {
 }
 
 export class VimModule {
-  static async init() {
+  static async init(context: ExtensionContext) {
     await workspace.nvim.call(
       'execute',
       `
@@ -79,11 +81,15 @@ export class VimModule {
 
     while (VimModule.initQueue.length) {
       const fn = VimModule.initQueue.shift()!;
-      await fn().catch(helperOnError);
+      try {
+        await fn(context);
+      } catch (error) {
+        helperOnError(error);
+      }
     }
   }
 
-  static initQueue: (() => Promise<void>)[] = [];
+  static initQueue: VimModule.InitQueueFn[] = [];
 
   static create<T extends object>(
     moduleName: string,
@@ -130,6 +136,10 @@ export class VimModule {
 
   constructor(public moduleKey: string) {}
 
+  registerInit(initFn: VimModule.InitQueueFn) {
+    VimModule.initQueue.push(initFn);
+  }
+
   fn<Args extends any[], R>(
     fnName: string,
     getContent: (ctx: VimModule.Context) => string,
@@ -138,7 +148,7 @@ export class VimModule {
     const name = `${globalVariable}.${this.moduleKey}.${fnName}`;
     const content = getContent({ name: name });
     const debugKey = `${this.moduleKey}.${fnName}`;
-    VimModule.initQueue.push(async () => {
+    this.registerInit(async () => {
       outputChannel.appendLine(`declare fn ${debugKey}`);
       await nvim.call('execute', [filterLineCont(content)]);
     });
@@ -170,7 +180,7 @@ export class VimModule {
     const name = `${globalVariable}.${this.moduleKey}.${varName}`;
     const debugKey = `${this.moduleKey}.${varName}`;
 
-    VimModule.initQueue.push(async () => {
+    this.registerInit(async () => {
       outputChannel.appendLine(`declare var ${debugKey}`);
       await nvim.call(declareVar, [
         this.moduleKey,
@@ -178,6 +188,7 @@ export class VimModule {
         filterLineCont(expression),
       ]);
     });
+
     return {
       name,
       inline: name,
