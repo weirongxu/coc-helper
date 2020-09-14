@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const { spawn } = require('child_process');
 const pathLib = require('path');
 const appRootPath = require('app-root-path');
@@ -62,4 +63,5 @@ module.exports = async () => {
   process.env.NODE_ENV = 'test';
   process.env.COC_DATA_HOME = pathLib.join(testsDir, 'coc-data-home');
   process.env.COC_VIMCONFIG = testsDir;
+  process.env.TMPDIR = os.tmpdir();
 };
