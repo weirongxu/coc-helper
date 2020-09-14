@@ -11,7 +11,7 @@ type EventResult = void | Promise<void>;
 type EventListener = (...args: any[]) => EventResult;
 type BufEventListener = (bufnr: number) => EventResult;
 
-export class VimEventEmitter<Events extends Record<string, EventListener>> {
+export class HelperEventEmitter<Events extends Record<string, EventListener>> {
   listenersMap = new Map<keyof Events, EventListener[]>();
 
   constructor(
@@ -77,7 +77,7 @@ export class VimEventEmitter<Events extends Record<string, EventListener>> {
   }
 }
 
-export const helperEvents = new VimEventEmitter<{
+export const helperEvents = new HelperEventEmitter<{
   BufDelete: BufEventListener;
   BufWipeout: BufEventListener;
 }>(helperOnError);
@@ -105,7 +105,7 @@ export async function registerHelperEvents(context: ExtensionContext) {
 
 export async function registerVimEvents(
   context: ExtensionContext,
-  events: VimEventEmitter<any>,
+  events: HelperEventEmitter<any>,
   activateEvents: eventsModule.ActivateEvent[],
   augroupName: string,
   commandName: string,
