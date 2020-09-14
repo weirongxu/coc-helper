@@ -1,6 +1,6 @@
 {
   "name": "coc-helper",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Helpers for coc.nvim",
   "main": "lib/index.js",
   "homepage": "https://github.com/weirongxu/coc-helper",
