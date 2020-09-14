@@ -2,7 +2,7 @@
   "name": "coc-helper",
   "version": "0.2.0",
   "description": "Helpers for coc.nvim",
-  "main": "lib/src/index.js",
+  "main": "lib/index.js",
   "homepage": "https://github.com/weirongxu/coc-helper",
   "repository": "git@github.com:weirongxu/coc-helper.git",
   "author": "Weirong Xu <weirongxu.raidou@gmail.com>",

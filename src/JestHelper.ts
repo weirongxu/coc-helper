@@ -13,12 +13,12 @@ import fs from 'fs';
 import os from 'os';
 import pathLib from 'path';
 import util from 'util';
+import { v4 as uuid } from 'uuid';
 import attach from 'coc.nvim/lib/attach';
 import Document from 'coc.nvim/lib/model/document';
 import Plugin from 'coc.nvim/lib/plugin';
 import workspace from 'coc.nvim/lib/workspace';
-import { v4 as uuid } from 'uuid';
-import { VimCompleteItem } from 'coc.nvim/lib/types';
+import type { VimCompleteItem } from 'coc.nvim/lib/types';
 
 process.on('uncaughtException', (err) => {
   const msg = 'Uncaught exception: ' + err.stack;
@@ -59,9 +59,9 @@ export class JestHelper extends EventEmitter {
     return this._plugin;
   }
 
-  public boot({ internal = false } = {}) {
+  public boot() {
     beforeAll(async () => {
-      await this.setup({ internal });
+      await this.setup();
     });
 
     afterAll(async () => {
@@ -73,11 +73,8 @@ export class JestHelper extends EventEmitter {
     });
   }
 
-  public async setup({ internal = false } = {}): Promise<void> {
-    const testsDir = pathLib.join(
-      __dirname!,
-      internal ? '../tests' : '../../tests',
-    );
+  public async setup(): Promise<void> {
+    const testsDir = pathLib.join(__dirname!, '../tests');
     const vimrcPath = pathLib.join(testsDir, 'vimrc');
     const proc = (this.proc = cp.spawn(
       'nvim',

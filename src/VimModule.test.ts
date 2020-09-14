@@ -21,7 +21,7 @@ const varTest = VimModule.create('var_test', (m) => {
   };
 });
 
-jestHelper.boot({ internal: true });
+jestHelper.boot();
 
 beforeAll(async () => {
   await VimModule.init().catch(helperOnError);

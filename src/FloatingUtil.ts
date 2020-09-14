@@ -3,7 +3,7 @@ import { BufferHighlight } from '@chemzqm/neovim';
 import { utilModule } from './modules/util';
 import { FloatingWindow } from './FloatingWindow';
 import { Notifier } from './notifier';
-import { byteLength } from './util';
+import { byteLength, displayWidth } from './util';
 
 const defaultBorderChars = ['─', '│', '─', '│', '┌', '┐', '┘', '└'];
 const defaultWinHl = 'CocHelperNormalFloat';
@@ -82,9 +82,7 @@ export class FloatingUtil {
         title: options.title
           ? {
               text: options.title,
-              width: await workspace.nvim.call('strdisplaywidth', [
-                options.title,
-              ]),
+              width: await displayWidth(options.title),
             }
           : { text: '', width: 0 },
         borderEnabled: !!options.border,

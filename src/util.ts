@@ -1,10 +1,10 @@
 import { workspace, OutputChannel, MapMode } from 'coc.nvim';
 import util from 'util';
-import Pkg from '../package.json';
+const Pkg = require('../package.json');
 
 export const isTest = process.env.NODE_ENV === 'test';
 
-export const version = Pkg.version;
+export const version: string = Pkg.version;
 
 export const versionName = version.replace(/[.-]/g, '_');
 
@@ -89,6 +89,10 @@ export function byteLength(str: string): number {
   return Buffer.byteLength(str);
 }
 
+export async function displayWidth(content: string) {
+  return (await workspace.nvim.call('strdisplaywidth', [content])) as number;
+}
+
 export async function displayHeight(
   width: number,
   lines: string[],
@@ -100,7 +104,7 @@ export async function displayHeight(
 ) {
   const heightGroup = await Promise.all(
     lines.map(async (l, idx) => {
-      let strwidth: number = await workspace.nvim.call('strdisplaywidth', [l]);
+      let strwidth = await displayWidth(l);
       if (
         mode === 'i' &&
         cursor &&

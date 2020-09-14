@@ -5,14 +5,14 @@ import { FloatingUtil } from './FloatingUtil';
 import { FloatingWindow } from './FloatingWindow';
 
 export namespace MultiFloatingWindow {
-  export type CreateOptions = Merge<
+  export type CreateOptions<WinKeys extends string = string> = Merge<
     FloatingWindow.CreateOptions,
     {
-      wins: number | Record<string, FloatingWindow.CreateOptions>;
+      wins: Record<WinKeys, FloatingWindow.CreateOptions>;
     }
   >;
 
-  export type OpenOptions = Merge<
+  export type OpenOptions<WinKeys extends string = string> = Merge<
     FloatingWindow.OpenOptions,
     {
       /**
@@ -23,30 +23,29 @@ export namespace MultiFloatingWindow {
        * @default height by 'wins'
        */
       height?: number;
-      wins: Record<string, FloatingWindow.OpenOptions>;
+      wins: Partial<Record<WinKeys, FloatingWindow.OpenOptions>>;
     }
   >;
 }
 
-export class MultiFloatingWindow implements Disposable {
-  static async create(options: MultiFloatingWindow.CreateOptions) {
+export class MultiFloatingWindow<WinKeys extends string = string>
+  implements Disposable {
+  static async create<WinKeys extends string = string>(
+    options: MultiFloatingWindow.CreateOptions<WinKeys>,
+  ) {
     const borderWin = await FloatingWindow.create({
       hasBorderBuf: false,
       mode: 'show',
       ...options,
     });
-    const winsOptions =
-      typeof options.wins === 'number'
-        ? Array(options.wins).fill(() => ({}))
-        : options.wins;
     const wins = await Promise.all(
-      Object.entries(winsOptions).map(
-        async ([key, win]: [string, FloatingWindow.CreateOptions]) =>
+      Object.entries(options.wins).map(
+        async ([key, win]) =>
           [
             key,
             await FloatingWindow.create({
               hasBorderBuf: false,
-              ...win,
+              ...(win as FloatingWindow),
             }),
           ] as const,
       ),
@@ -58,7 +57,7 @@ export class MultiFloatingWindow implements Disposable {
 
     const borderSrcId = await FloatingWindow.borderSrcId();
     const util = new FloatingUtil(borderSrcId);
-    return new MultiFloatingWindow(borderWin, winDict, util);
+    return new MultiFloatingWindow<WinKeys>(borderWin, winDict, util);
   }
 
   public bufnrs: number[];
@@ -68,7 +67,7 @@ export class MultiFloatingWindow implements Disposable {
 
   protected constructor(
     public borderFloatWin: FloatingWindow,
-    public floatWinDict: Record<string, FloatingWindow>,
+    public floatWinDict: Record<WinKeys, FloatingWindow>,
     protected util: FloatingUtil,
   ) {
     this.floatWins = Object.values(this.floatWinDict);
@@ -91,17 +90,19 @@ export class MultiFloatingWindow implements Disposable {
     return this.borderFloatWin.opened();
   }
 
-  protected sizeByWinsOptions(
+  protected async sizeByWinsOptions(
     winsOptions: FloatingWindow.OpenOptions[],
-  ): FloatingUtil.Size {
+  ): Promise<FloatingUtil.Size> {
     let width = 0,
       height = 0;
     for (const winOptions of winsOptions) {
-      const w = (winOptions.left ?? 0) + winOptions.width;
+      const ctx = await this.util.createContext(winOptions);
+      const boxes = this.util.getBoxSizes(ctx, winOptions, false);
+      const w = (winOptions.left ?? 0) + boxes.borderBox[2];
       if (w > width) {
         width = w;
       }
-      const h = (winOptions.top ?? 0) + winOptions.height;
+      const h = (winOptions.top ?? 0) + boxes.borderBox[3];
       if (h > height) {
         height = h;
       }
@@ -111,10 +112,12 @@ export class MultiFloatingWindow implements Disposable {
 
   protected async batchAction(
     notifierAction: 'openNotifier' | 'resumeNotifier' | 'resizeNotifier',
-    options: MultiFloatingWindow.OpenOptions,
+    options: MultiFloatingWindow.OpenOptions<WinKeys>,
     { reverse = false, updateCursorPosition = true } = {},
   ) {
-    const [width, height] = this.sizeByWinsOptions(Object.values(options.wins));
+    const [width, height] = await this.sizeByWinsOptions(
+      Object.values(options.wins),
+    );
 
     const finalOptions = {
       width,
@@ -138,7 +141,7 @@ export class MultiFloatingWindow implements Disposable {
       }
 
       notifiers.push(
-        await floatWin[notifierAction]({
+        await (floatWin as FloatingWindow)[notifierAction]({
           ...winOptions,
           relative: 'editor',
           top: contentBox[0] + (winOptions.top ?? 0),
@@ -160,15 +163,15 @@ export class MultiFloatingWindow implements Disposable {
     await Notifier.runAll(notifiers);
   }
 
-  async open(options: MultiFloatingWindow.OpenOptions) {
+  async open(options: MultiFloatingWindow.OpenOptions<WinKeys>) {
     return this.batchAction('openNotifier', options);
   }
 
-  async resume(options: MultiFloatingWindow.OpenOptions) {
+  async resume(options: MultiFloatingWindow.OpenOptions<WinKeys>) {
     return this.batchAction('resumeNotifier', options);
   }
 
-  resize(options: MultiFloatingWindow.OpenOptions) {
+  resize(options: MultiFloatingWindow.OpenOptions<WinKeys>) {
     return this.batchAction('resizeNotifier', options, {
       updateCursorPosition: false,
     });
