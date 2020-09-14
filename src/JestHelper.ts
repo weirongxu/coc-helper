@@ -4,7 +4,9 @@
  * 2018-2020 Qiming Zhao <chemzqm@gmail.com>
  * 2020 Weirong Xu <weirongxu.raidou@gmail.com>
  *--------------------------------------------------------------------------------------------*/
-// modified from: https://github.com/neoclide/coc.nvim/blob/687af54a67e20d6bb1e1760f6e702fb751591157/src/__tests__/helper.ts
+/**
+ * modified from: https://github.com/neoclide/coc.nvim/blob/f40fdf889f65412d763cf43995f707b4b461e9f2/src/__tests__/helper.ts
+ */
 
 import { Buffer, Neovim, Window } from '@chemzqm/neovim';
 import * as cp from 'child_process';
@@ -19,6 +21,9 @@ import Document from 'coc.nvim/lib/model/document';
 import Plugin from 'coc.nvim/lib/plugin';
 import workspace from 'coc.nvim/lib/workspace';
 import type { VimCompleteItem } from 'coc.nvim/lib/types';
+
+// @ts-ignore
+global.__TEST__ = true;
 
 process.on('uncaughtException', (err) => {
   const msg = 'Uncaught exception: ' + err.stack;
@@ -74,7 +79,7 @@ export class JestHelper extends EventEmitter {
   }
 
   public async setup(): Promise<void> {
-    const testsDir = pathLib.join(__dirname!, '../tests');
+    const testsDir = pathLib.join(__dirname, '../tests');
     const vimrcPath = pathLib.join(testsDir, 'vimrc');
     const proc = (this.proc = cp.spawn(
       'nvim',
@@ -105,7 +110,7 @@ export class JestHelper extends EventEmitter {
   }
 
   public async shutdown(): Promise<void> {
-    await this.plugin.dispose();
+    this.plugin.dispose();
     await this.nvim.quit();
     if (this.proc) {
       this.proc.kill('SIGKILL');

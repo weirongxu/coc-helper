@@ -60,5 +60,6 @@ module.exports = async () => {
   );
 
   process.env.NODE_ENV = 'test';
-  process.env.COC_DATA_HOME = testsDir;
+  process.env.COC_DATA_HOME = pathLib.join(testsDir, 'coc-data-home');
+  process.env.COC_VIMCONFIG = testsDir;
 };

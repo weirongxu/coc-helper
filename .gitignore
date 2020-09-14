@@ -2,3 +2,4 @@
 /mini_vimrc/data_home
 node_modules
 /tests/coc.nvim
+/tests/coc-data-home
