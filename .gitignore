@@ -1,6 +1,6 @@
 /lib
 /mini_vimrc/data_home
 node_modules
-/src/package.json
+/src/_package.json
 /tests/coc.nvim
 /tests/coc-data-home

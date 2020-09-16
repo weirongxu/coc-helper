@@ -1,7 +1,7 @@
 import { workspace, OutputChannel, MapMode } from 'coc.nvim';
 import util from 'util';
 // @ts-ignore
-import Pkg from './package.json';
+import Pkg from './_package.json';
 
 export const isTest = process.env.NODE_ENV === 'test';
 

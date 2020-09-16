@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "clean": "rimraf lib",
-    "copy:pkg": "cpy package.json src/",
+    "copy:pkg": "cpy --rename=_package.json package.json src/",
     "build:esm": "tsc -p tsconfig.prod.json --module es2015 --outDir lib/esm",
     "build:cjs": "tsc -p tsconfig.prod.json --module commonjs --outDir lib/cjs",
     "build": "npm-run-all clean copy:pkg build:esm build:cjs",
@@ -44,7 +44,7 @@
     "@types/app-root-path": "^1.2.4",
     "@types/eslint": "^7.2.2",
     "@types/jest": "^26.0.13",
-    "@types/node": "^14.10.1",
+    "@types/node": "^14.10.2",
     "@types/rimraf": "^3.0.0",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.1.1",
