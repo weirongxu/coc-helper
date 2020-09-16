@@ -6,7 +6,6 @@ import { displayHeight, sleep } from './util';
 import { VimModule } from './VimModule';
 export * from './events';
 export * from './FloatingWindow';
-export * from './JestHelper';
 export * from './modules/buf';
 export * from './modules/floating';
 export * from './modules/util';

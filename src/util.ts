@@ -1,6 +1,10 @@
 import { workspace, OutputChannel, MapMode } from 'coc.nvim';
 import util from 'util';
-const Pkg = require('../package.json');
+
+const pkgPath = __dirname.endsWith('src')
+  ? '..'
+  : '../..';
+const Pkg = require(pkgPath + '/package.json');
 
 export const isTest = process.env.NODE_ENV === 'test';
 
