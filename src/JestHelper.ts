@@ -37,7 +37,7 @@ export class JestHelper extends EventEmitter {
 
   public proc?: cp.ChildProcess;
 
-  constructor() {
+  constructor(public testsDir: string) {
     super();
     this.setMaxListeners(99);
   }
@@ -79,13 +79,12 @@ export class JestHelper extends EventEmitter {
   }
 
   public async setup(): Promise<void> {
-    const testsDir = pathLib.join(__dirname, '../tests');
-    const vimrcPath = pathLib.join(testsDir, 'vimrc');
+    const vimrcPath = pathLib.join(this.testsDir, 'vimrc');
     const proc = (this.proc = cp.spawn(
       'nvim',
       ['-u', vimrcPath, '-i', 'NONE', '--embed'],
       {
-        cwd: testsDir,
+        cwd: this.testsDir,
       },
     ));
     const plugin = (this.plugin = attach({ proc }));
@@ -291,4 +290,4 @@ async function createTmpFile(content: string): Promise<string> {
   return filename;
 }
 
-export const jestHelper = new JestHelper();
+export const jestHelper = new JestHelper(pathLib.join(__dirname, '../tests'));
