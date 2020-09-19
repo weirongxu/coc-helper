@@ -8,7 +8,10 @@ const fnTest = VimModule.create('fn_test', (m) => {
       'test',
       ({ name }) => `
         function! ${name}(arg) abort
-          return a:arg
+          let a = {
+            \\ 'arg': a:arg
+            \\ }
+          return a.arg
         endfunction
       `,
     ),
