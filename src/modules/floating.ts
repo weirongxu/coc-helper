@@ -189,7 +189,9 @@ export const floatingModule = VimModule.create('float', (m) => {
       'winid',
       ({ name }) => `
         function! ${name}(bufnr) abort
-          return getbufvar(a:bufnr, 'coc_helper_winid', v:null)
+          let id = getbufvar(a:bufnr, 'coc_helper_winid', v:null)
+          let nr = win_id2win(id)
+          return nr is 0 ? v:null : id
         endfunction
       `,
     ),

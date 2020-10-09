@@ -307,6 +307,38 @@ export class FloatingWindow implements Disposable {
     );
   }
 
+  setLinesNotifier(options: FloatingWindow.OpenOptions) {
+    return Notifier.create(() => {
+      if (!options.lines && !options.modifiable) {
+        return;
+      }
+
+      const modifiable = this.getModifiable(options);
+
+      this.buffer.setOption('modifiable', true, true);
+      this.buffer.setOption('readonly', false, true);
+      if (options.lines) {
+        void this.buffer.setLines(options.lines, { start: 0, end: -1 }, true);
+      }
+      if (!modifiable) {
+        this.buffer.setOption('modifiable', false, true);
+        this.buffer.setOption('readonly', true, true);
+      }
+      if (options.highlights) {
+        for (const hl of options.highlights) {
+          void this.buffer.addHighlight(hl);
+        }
+      }
+      if (workspace.isVim) {
+        this.nvim.command('redraw!', true);
+      }
+    });
+  }
+
+  async setLines(options: FloatingWindow.OpenOptions) {
+    await this.setLinesNotifier(options).run();
+  }
+
   async opened() {
     const win = await this.win();
     return !!win;
@@ -323,7 +355,6 @@ export class FloatingWindow implements Disposable {
     const ctx = await this.util.createContext(options);
     const [initedExecute, borderInitedExecute] = this.getInitedExecute(options);
     const [winConfig, borderWinConfig] = this.util.winConfig(ctx, options);
-    const modifiable = this.getModifiable(options);
 
     if (options.borderOnly && borderWinConfig) {
       notifiers.push(
@@ -373,25 +404,7 @@ export class FloatingWindow implements Disposable {
     }
 
     notifiers.push(
-      Notifier.create(() => {
-        this.buffer.setOption('modifiable', true, true);
-        this.buffer.setOption('readonly', false, true);
-        if (options.lines) {
-          void this.buffer.setLines(options.lines, { start: 0, end: -1 }, true);
-        }
-        if (!modifiable) {
-          this.buffer.setOption('modifiable', false, true);
-          this.buffer.setOption('readonly', true, true);
-        }
-        if (options.highlights) {
-          for (const hl of options.highlights) {
-            void this.buffer.addHighlight(hl);
-          }
-        }
-        if (workspace.isVim) {
-          this.nvim.command('redraw!', true);
-        }
-      }),
+      this.setLinesNotifier(options),
       Notifier.create(() => {
         if (options.filetype) {
           this.buffer.setOption('&filetype', options.filetype, true);
