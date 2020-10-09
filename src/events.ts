@@ -7,21 +7,34 @@ import { VimModule } from './VimModule';
 type Arguments<F extends Function> = F extends (...args: infer Args) => any
   ? Args
   : never;
-type EventResult = void | Promise<void>;
-type EventListener = (...args: any[]) => EventResult;
-type BufEventListener = (bufnr: number) => EventResult;
 
-export class HelperEventEmitter<Events extends Record<string, EventListener>> {
-  listenersMap = new Map<keyof Events, EventListener[]>();
+namespace HelperEventEmitter {
+  export type EventResult = void | Promise<void>;
+  export type EventListener = (...args: any[]) => EventResult;
+  export type BufEventListener = (bufnr: number) => EventResult;
+  export interface VimEventOptions {
+    eventExpr: string;
+    argExprs?: string[];
+    /**
+     * @default
+     */
+    async?: boolean;
+  }
+}
+
+export class HelperEventEmitter<
+  Events extends Record<string, HelperEventEmitter.EventListener>
+> {
+  listenersMap = new Map<keyof Events, HelperEventEmitter.EventListener[]>();
 
   constructor(
     protected onError: ReturnType<typeof genOnError>,
     public readonly concurrent = false,
   ) {}
 
-  listeners(event: keyof Events): EventListener[] {
+  listeners(event: keyof Events): HelperEventEmitter.EventListener[] {
     if (!this.listenersMap.has(event)) {
-      const listeners: EventListener[] = [];
+      const listeners: HelperEventEmitter.EventListener[] = [];
       this.listenersMap.set(event, listeners);
       return listeners;
     }
@@ -77,69 +90,100 @@ export class HelperEventEmitter<Events extends Record<string, EventListener>> {
   }
 }
 
-export const helperEvents = new HelperEventEmitter<{
-  BufDelete: BufEventListener;
-  BufWipeout: BufEventListener;
-}>(helperOnError);
+export class HelperVimEvents<
+  VimEvents extends Record<string, HelperEventEmitter.EventListener>
+> {
+  static ID = 0;
 
-export async function registerHelperEvents(context: ExtensionContext) {
-  await registerVimEvents(
-    context,
-    helperEvents,
-    [
-      {
-        event: 'BufDelete',
-        eventExpr: 'BufDelete *',
-        argExprs: ["+expand('<abuf>')"],
-      },
-      {
-        event: 'BufWipeout',
-        eventExpr: 'BufWipeout *',
-        argExprs: ["+expand('<abuf>')"],
-      },
-    ],
-    `CocHelperInternal_${versionName}`,
-    'coc-helper.internal.didVimEvent',
-  );
-}
+  public events: HelperEventEmitter<VimEvents>;
+  public augroupName: string;
+  public commandName: string;
+  public id: number;
 
-export async function registerVimEvents(
-  context: ExtensionContext,
-  events: HelperEventEmitter<any>,
-  activateEvents: eventsModule.ActivateEvent[],
-  augroupName: string,
-  commandName: string,
-) {
-  await eventsModule.activate.call(augroupName, commandName, activateEvents);
+  constructor(
+    protected vimEvents: Record<
+      keyof VimEvents,
+      HelperEventEmitter.VimEventOptions
+    >,
+    protected onError: ReturnType<typeof genOnError>,
+    protected options: {
+      name?: string;
+      augroupName?: string;
+      commandName?: string;
+      /**
+       * @default false
+       */
+      concurrent?: boolean;
+    } = {},
+  ) {
+    ++HelperVimEvents.ID;
+    this.id = HelperVimEvents.ID;
+    this.augroupName =
+      options.augroupName ??
+      `CocHelperInternal_${versionName}_${
+        options.name ? `${options.name}_` : ''
+      }${this.id}`;
+    this.commandName =
+      options.commandName ??
+      options.commandName ??
+      `coc-helper.internal.didVimEvent_${
+        options.name ? `${options.name}_` : ''
+      }${this.id}`;
+    this.events = new HelperEventEmitter(onError, options.concurrent ?? false);
+  }
 
-  context.subscriptions.push(
-    Disposable.create(async () => {
-      await eventsModule.deactivate.call(augroupName);
-    }),
-  );
+  async register(context: ExtensionContext) {
+    await eventsModule.activate.call(
+      this.augroupName,
+      this.commandName,
+      Object.entries(this.vimEvents).map(([key, e]) => ({
+        event: key,
+        ...e,
+      })),
+    );
 
-  context.subscriptions.push(
-    commands.registerCommand(
-      commandName,
-      helperAsyncCatch((event: any, ...args: any[]) =>
-        events.fire(event, ...args),
+    context.subscriptions.push(
+      Disposable.create(async () => {
+        await eventsModule.deactivate.call(this.augroupName);
+      }),
+    );
+
+    context.subscriptions.push(
+      commands.registerCommand(
+        this.commandName,
+        helperAsyncCatch((event: any, ...args: any[]) =>
+          this.events.fire(event, ...(args as any)),
+        ),
+        undefined,
+        true,
       ),
-      undefined,
-      true,
-    ),
-  );
+    );
+  }
 }
+
+export const helperVimEvents = new HelperVimEvents<{
+  BufDelete: HelperEventEmitter.BufEventListener;
+  BufWipeout: HelperEventEmitter.BufEventListener;
+}>(
+  {
+    BufDelete: {
+      eventExpr: 'BufDelete *',
+      argExprs: ["+expand('<abuf>')"],
+    },
+    BufWipeout: {
+      eventExpr: 'BufWipeout *',
+      argExprs: ["+expand('<abuf>')"],
+    },
+  },
+  helperOnError,
+);
+
+export const helperEvents = helperVimEvents.events;
 
 export namespace eventsModule {
-  export type ActivateEvent = {
+  export interface ActivateEvent extends HelperEventEmitter.VimEventOptions {
     event: string;
-    eventExpr: string;
-    argExprs?: string[];
-    /**
-     * @default
-     */
-    async?: boolean;
-  };
+  }
 }
 
 export const eventsModule = VimModule.create('events', (m) => {

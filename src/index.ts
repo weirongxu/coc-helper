@@ -1,5 +1,5 @@
 import { commands, events, ExtensionContext, workspace } from 'coc.nvim';
-import { helperEvents, registerHelperEvents } from './events';
+import { helperEvents, helperVimEvents } from './events';
 import { FloatingWindow } from './FloatingWindow';
 import { MultiFloatingWindow } from './MultiFloatingWindow';
 import { displayHeight, sleep } from './util';
@@ -31,7 +31,7 @@ export async function activateHelper(
     await VimModule.init(context);
   }
   if (options.events ?? true) {
-    await registerHelperEvents(context);
+    await helperVimEvents.register(context);
   }
   try {
     await workspace.nvim.command(
