@@ -164,13 +164,17 @@ export const floatingModule = VimModule.create('float', (m) => {
               return
             endif
             call nvim_win_set_config(winid, a:win_config)
-            redraw!
+            if has('nvim')
+              redraw!
+            endif
 
             if a:border_bufnr
               let border_winid = getbufvar(a:bufnr, 'coc_helper_border_winid', v:null)
               if border_winid
                 call nvim_win_set_config(border_winid, a:border_win_config)
-                redraw!
+                if has('nvim')
+                  redraw!
+                endif
               endif
             endif
           endfunction
