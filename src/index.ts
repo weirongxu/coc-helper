@@ -13,6 +13,7 @@ export * from './MultiFloatingWindow';
 export * from './notifier';
 export * from './util';
 export * from './VimModule';
+export * from './WinLayoutFinder';
 
 export async function activateHelper(
   context: ExtensionContext,
