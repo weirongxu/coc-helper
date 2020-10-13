@@ -1,6 +1,7 @@
+export * from './collection';
+export * from './config';
 export * from './env';
 export * from './log';
-export * from './collection';
 export * from './text';
 export * from './version';
 
