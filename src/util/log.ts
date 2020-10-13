@@ -1,13 +1,6 @@
-import { workspace, OutputChannel, MapMode } from 'coc.nvim';
+import { OutputChannel, workspace } from 'coc.nvim';
 import util from 'util';
-// @ts-ignore
-import Pkg from './_package.json';
-
-export const isTest = process.env.NODE_ENV === 'test';
-
-export const version: string = Pkg.version;
-
-export const versionName = version.replace(/[.-]/g, '_');
+import { isTest } from './env';
 
 export const outputChannel = workspace.createOutputChannel('coc-helper');
 
@@ -53,15 +46,6 @@ export function genAsyncCatch(
 
 export const helperAsyncCatch = genAsyncCatch(helperOnError);
 
-export const compactI = <T>(arr: (T | undefined | null | void)[]): T[] =>
-  arr.filter((it): it is T => it !== undefined && it !== null);
-
-export function sleep(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 export function prettyPrint(...data: any[]) {
   const padZore = (s: number) => s.toString(10).padStart(2, '0');
   const date = new Date();
@@ -75,47 +59,4 @@ export function prettyPrint(...data: any[]) {
   }
   // eslint-disable-next-line no-restricted-properties
   workspace.showMessage(s);
-}
-
-export function sum(arr: number[]) {
-  return arr.reduce((total, cur) => total + cur);
-}
-
-export function byteIndex(content: string, index: number): number {
-  const s = content.slice(0, index);
-  return Buffer.byteLength(s);
-}
-
-export function byteLength(str: string): number {
-  return Buffer.byteLength(str);
-}
-
-export async function displayWidth(content: string) {
-  return (await workspace.nvim.call('strdisplaywidth', [content])) as number;
-}
-
-export async function displayHeight(
-  width: number,
-  lines: string[],
-  /**
-   * line is 1-index, column is 0-index
-   */
-  cursor?: [line: number, column: number],
-  mode: MapMode = 'n',
-) {
-  const heightGroup = await Promise.all(
-    lines.map(async (l, idx) => {
-      let strwidth = await displayWidth(l);
-      if (
-        mode === 'i' &&
-        cursor &&
-        cursor[0] - 1 === idx &&
-        cursor[1] + 1 >= strwidth
-      ) {
-        strwidth += 1;
-      }
-      return Math.ceil(strwidth / width);
-    }),
-  );
-  return sum(heightGroup);
 }

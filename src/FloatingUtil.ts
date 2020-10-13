@@ -59,7 +59,7 @@ export namespace FloatingUtil {
   };
 
   export type NvimWinConfig = {
-    relative: string;
+    relative: 'editor' | 'win' | 'cursor';
     row: number;
     col: number;
     width: number;
