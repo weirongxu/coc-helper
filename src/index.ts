@@ -19,10 +19,12 @@ export async function activateHelper(
   context: ExtensionContext,
   options: {
     /**
+     * activate VimModule
      * @default true
      */
     vimModule?: boolean;
     /**
+     * activate helperVimEvents and helperEvents
      * @default false
      */
     events?: boolean;

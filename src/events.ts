@@ -90,6 +90,28 @@ export class HelperEventEmitter<
   }
 }
 
+/**
+ * Support more vim events
+ *
+ * @example
+ * ```typescript
+ * export const helperVimEvents = new HelperVimEvents<{
+ *   BufDelete: HelperEventEmitter.BufEventListener;
+ *   BufWipeout: HelperEventEmitter.BufEventListener;
+ * }>(
+ *   {
+ *     BufDelete: {
+ *       eventExpr: 'BufDelete *',
+ *       argExprs: ["+expand('<abuf>')"],
+ *     },
+ *     CocDiagnosticChange: {
+ *       eventExpr: 'User CocDiagnosticChange',
+ *     },
+ *   },
+ *   (error: Error | string) => void,
+ * );
+ * ```
+ */
 export class HelperVimEvents<
   VimEvents extends Record<string, HelperEventEmitter.EventListener>
 > {
