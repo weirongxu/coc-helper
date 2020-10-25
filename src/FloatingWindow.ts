@@ -184,8 +184,6 @@ export class FloatingWindow implements Disposable {
     open: { bufnr: 'a:ctx.bufnr', winid: 'a:ctx.winid' },
   };
 
-  protected static _borderSrcId?: number;
-
   protected static getInitedExecute(
     mode: FloatingWindow.Mode,
     options: FloatingWindow.CreateOptions,
@@ -206,11 +204,13 @@ export class FloatingWindow implements Disposable {
     return [initedExecute, borderInitedExecute];
   }
 
-  static async borderSrcId() {
-    if (!this._borderSrcId) {
-      this._borderSrcId = await workspace.nvim.createNamespace();
+  protected static srcId_?: number;
+
+  static async srcId() {
+    if (!this.srcId_) {
+      this.srcId_ = await workspace.nvim.createNamespace('coc-helper-floatwin');
     }
-    return this._borderSrcId;
+    return this.srcId_;
   }
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
@@ -219,7 +219,7 @@ export class FloatingWindow implements Disposable {
       mode,
       options,
     );
-    const borderSrcId = await this.borderSrcId();
+    const srcId = await this.srcId();
 
     const [bufnr, borderBufnr] = await floatingModule.create.call(
       options.name ?? '',
@@ -228,7 +228,7 @@ export class FloatingWindow implements Disposable {
       borderInitedExecute,
     );
 
-    const floatingUtil = new FloatingUtil(borderSrcId);
+    const floatingUtil = new FloatingUtil(srcId);
 
     return new FloatingWindow(
       bufnr,
@@ -326,6 +326,9 @@ export class FloatingWindow implements Disposable {
       }
       if (options.highlights) {
         for (const hl of options.highlights) {
+          if (hl.srcId === undefined && hl.srcId === -1) {
+            hl.srcId = 0;
+          }
           void this.buffer.addHighlight(hl);
         }
       }

@@ -55,8 +55,8 @@ export class MultiFloatingWindow<WinKeys extends string = string>
       return dict;
     }, {} as Record<string, FloatingWindow>);
 
-    const borderSrcId = await FloatingWindow.borderSrcId();
-    const util = new FloatingUtil(borderSrcId);
+    const srcId = await FloatingWindow.srcId();
+    const util = new FloatingUtil(srcId);
     return new MultiFloatingWindow<WinKeys>(borderWin, winDict, util);
   }
 

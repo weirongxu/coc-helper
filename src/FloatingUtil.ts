@@ -69,7 +69,7 @@ export namespace FloatingUtil {
 }
 
 export class FloatingUtil {
-  constructor(protected borderSrcId: number) {}
+  constructor(protected srcId: number) {}
 
   async createContext(
     options: FloatingWindow.OpenOptions,
@@ -432,7 +432,7 @@ export class FloatingUtil {
     const borderWinHl = options.borderWinHl ?? defaultBorderWinHl;
     if (borderWinHl) {
       highlights.push({
-        srcId: this.borderSrcId,
+        srcId: this.srcId,
         hlGroup: borderWinHl,
         line: 0,
         colStart: 0,
@@ -441,7 +441,7 @@ export class FloatingUtil {
       for (let l = 0, len = spaceHeight; l < len; l++) {
         if (bLeft) {
           highlights.push({
-            srcId: this.borderSrcId,
+            srcId: this.srcId,
             hlGroup: borderWinHl,
             line: l + 1,
             colStart: 0,
@@ -450,7 +450,7 @@ export class FloatingUtil {
         }
         if (bRight) {
           highlights.push({
-            srcId: this.borderSrcId,
+            srcId: this.srcId,
             hlGroup: borderWinHl,
             line: l + 1,
             colStart: byteLength(cLeft) + spaceWidth,
@@ -460,7 +460,7 @@ export class FloatingUtil {
       }
       if (bBottom) {
         highlights.push({
-          srcId: this.borderSrcId,
+          srcId: this.srcId,
           hlGroup: borderWinHl,
           line: height - 1,
           colStart: 0,
