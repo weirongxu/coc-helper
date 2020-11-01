@@ -218,6 +218,4 @@ module.exports = {
 };
 ```
 
-github ci workflows
-
-https://github.com/weirongxu/coc-floatinput/tree/master/.github/workflows
+[github ci workflows](./.github/workflows/ci.yml)
