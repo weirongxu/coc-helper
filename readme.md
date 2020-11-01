@@ -205,3 +205,19 @@ Notifier.notifyAll([callNotifierCombined, callNotifier2]);
 callNotifierCombined.notify();
 await nvim.resumeNotification();
 ```
+
+### Jest setup and CI
+
+jest.config.json
+
+```javascript
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  globalSetup: './node_modules/coc-helper/tests/jest-setup.js',
+};
+```
+
+github ci workflows
+
+https://github.com/weirongxu/coc-floatinput/tree/master/.github/workflows
