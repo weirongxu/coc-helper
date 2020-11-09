@@ -2,7 +2,7 @@ import { OutputChannel, workspace } from 'coc.nvim';
 import util from 'util';
 import { isTest } from './env';
 
-export const outputChannel = workspace.createOutputChannel('coc-helper');
+export const helperOutputChannel = workspace.createOutputChannel('coc-helper');
 
 export function genOnError(outputChannel: OutputChannel) {
   return (error: Error | string) => {
@@ -26,7 +26,7 @@ export function genOnError(outputChannel: OutputChannel) {
   };
 }
 
-export const helperOnError = genOnError(outputChannel);
+export const helperOnError = genOnError(helperOutputChannel);
 
 type AsyncCatchFn = (...args: any) => any | Promise<any>;
 
@@ -46,7 +46,7 @@ export function genAsyncCatch(
 
 export const helperAsyncCatch = genAsyncCatch(helperOnError);
 
-export function prettyPrint(...data: any[]) {
+export function prettyObject(...data: any[]) {
   const padZore = (s: number) => s.toString(10).padStart(2, '0');
   const date = new Date();
   let s = `[${date.getFullYear()}/${padZore(date.getMonth() + 1)}/${padZore(
@@ -57,6 +57,10 @@ export function prettyPrint(...data: any[]) {
   for (const d of data) {
     s += ' ' + util.inspect(d);
   }
+  return s;
+}
+
+export function prettyPrint(...data: any[]) {
   // eslint-disable-next-line no-restricted-properties
-  workspace.showMessage(s);
+  workspace.showMessage(prettyObject(...data));
 }
