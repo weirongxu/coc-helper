@@ -45,7 +45,9 @@ export const floatingModule = VimModule.create('float', (m) => {
       : `
         function! ${name}(bufnr, focus, win_config, win_hl, inited_execute) abort
           let winid = popup_create(a:bufnr, a:win_config)
-          call ${initExecute.inlineCall("{'bufnr': a:bufnr}, a:inited_execute")}
+          call ${initExecute.inlineCall(
+            "{'bufnr': a:bufnr, 'winid': winid}, a:inited_execute",
+          )}
 
           return winid
         endfunction
