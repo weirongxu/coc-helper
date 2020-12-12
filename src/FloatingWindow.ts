@@ -145,8 +145,6 @@ export class FloatingWindow implements Disposable {
         call setbufvar(${ctx.bufnr}, '&listchars', '')
         if has('nvim')
           call setbufvar(${ctx.bufnr}, '&fillchars', 'eob:\ ')
-        else
-          call setbufvar(${ctx.bufnr}, '&fillchars', '')
         endif
 
         call setbufvar(${ctx.bufnr}, '&signcolumn', 'no')
@@ -432,6 +430,7 @@ export class FloatingWindow implements Disposable {
         this.borderBufnr ?? null,
         borderWinConfig ?? null,
         this.getFocus(options),
+        this.util.nvimWinHl(options),
       );
       if (this.borderBuffer && borderWinConfig) {
         this.util
@@ -470,6 +469,7 @@ export class FloatingWindow implements Disposable {
           borderWinConfig,
           null,
           null,
+          this.util.nvimWinHl(options),
         ),
       );
       notifiers.push(
@@ -487,6 +487,7 @@ export class FloatingWindow implements Disposable {
           winConfig,
           this.borderBufnr ?? null,
           borderWinConfig ?? null,
+          this.util.nvimWinHl(options),
         ),
       );
     }

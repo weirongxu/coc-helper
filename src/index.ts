@@ -95,6 +95,8 @@ export async function activate(context: ExtensionContext) {
       height: 10,
       border: [],
       padding: [],
+      winHl: 'Pmenu',
+      winHlNC: 'Pmenu',
       modifiable: true,
       focus: false,
       filetype: 'test',

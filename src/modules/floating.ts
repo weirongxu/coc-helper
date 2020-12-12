@@ -21,7 +21,7 @@ export const floatingModule = VimModule.create('float', (m) => {
     [
       bufnr: number,
       focus: boolean,
-      winConfig: NvimWinConfig,
+      winConfig: NvimWinConfig | VimWinConfig,
       winHl: string,
       initedExecute: string,
     ],
@@ -129,20 +129,21 @@ export const floatingModule = VimModule.create('float', (m) => {
         borderBufnr: number | null,
         borderWinConfig: NvimWinConfig | VimWinConfig | null,
         focus: boolean,
+        winHl: string,
       ],
       void
     >(
       'resume',
       ({ name }) => `
-        function! ${name}(bufnr, win_config, border_bufnr, border_win_config, focus) abort
+        function! ${name}(bufnr, win_config, border_bufnr, border_win_config, focus, win_hl) abort
           let winid = ${openWin.inlineCall(
-            "a:bufnr, a:focus, a:win_config, '', ''",
+            "a:bufnr, a:focus, a:win_config, a:win_hl, ''",
           )}
           call setbufvar(a:bufnr, 'coc_helper_winid', winid)
 
           if a:border_bufnr
             let border_winid = ${openWin.inlineCall(
-              "border_bufnr, v:false, a:border_win_config, '', ''",
+              "border_bufnr, v:false, a:border_win_config, a:win_hl, ''",
             )}
             call setbufvar(a:bufnr, 'coc_helper_border_winid', border_winid)
           endif
@@ -155,17 +156,21 @@ export const floatingModule = VimModule.create('float', (m) => {
         winConfig: NvimWinConfig | VimWinConfig,
         borderBufnr: number | null,
         borderWinConfig: NvimWinConfig | VimWinConfig | null,
+        winHl: string,
       ],
       void
     >('update', ({ name }) =>
       isNvim
         ? `
-          function! ${name}(bufnr, win_config, border_bufnr, border_win_config) abort
+          function! ${name}(bufnr, win_config, border_bufnr, border_win_config, win_hl) abort
             let winid = getbufvar(a:bufnr, 'coc_helper_winid', v:null)
             if !winid
               return
             endif
             call nvim_win_set_config(winid, a:win_config)
+            if !empty(a:win_hl)
+              call nvim_win_set_option(winid, 'winhl', a:win_hl)
+            endif
             if has('nvim')
               redraw!
             endif
@@ -174,6 +179,9 @@ export const floatingModule = VimModule.create('float', (m) => {
               let border_winid = getbufvar(a:bufnr, 'coc_helper_border_winid', v:null)
               if border_winid
                 call nvim_win_set_config(border_winid, a:border_win_config)
+                if !empty(a:win_hl)
+                  call nvim_win_set_option(border_winid, 'winhl', a:win_hl)
+                endif
                 if has('nvim')
                   redraw!
                 endif
@@ -182,7 +190,7 @@ export const floatingModule = VimModule.create('float', (m) => {
           endfunction
         `
         : `
-          function! ${name}(bufnr, win_config, border_bufnr, border_win_config) abort
+          function! ${name}(bufnr, win_config, border_bufnr, border_win_config, win_hl) abort
             let winid = getbufvar(a:bufnr, 'coc_helper_winid', v:null)
             if !winid
               return
