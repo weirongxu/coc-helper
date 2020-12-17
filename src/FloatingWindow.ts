@@ -202,14 +202,7 @@ export class FloatingWindow implements Disposable {
     return [initedExecute, borderInitedExecute];
   }
 
-  protected static srcId_?: number;
-
-  static async srcId() {
-    if (!this.srcId_) {
-      this.srcId_ = await workspace.nvim.createNamespace('coc-helper-floatwin');
-    }
-    return this.srcId_;
-  }
+  static srcId = workspace.createNameSpace('coc-helper-floatwin');
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
     const mode = options.mode ?? 'default';
@@ -217,7 +210,6 @@ export class FloatingWindow implements Disposable {
       mode,
       options,
     );
-    const srcId = await this.srcId();
 
     const [bufnr, borderBufnr] = await floatingModule.create.call(
       options.name ?? '',
@@ -226,7 +218,7 @@ export class FloatingWindow implements Disposable {
       borderInitedExecute,
     );
 
-    const floatingUtil = new FloatingUtil(srcId);
+    const floatingUtil = new FloatingUtil(this.srcId);
 
     return new FloatingWindow(
       bufnr,
