@@ -316,8 +316,8 @@ export class FloatingWindow implements Disposable {
       }
       if (options.highlights) {
         for (const hl of options.highlights) {
-          if (hl.srcId === undefined || hl.srcId === -1) {
-            hl.srcId = 0;
+          if (hl.srcId === undefined || hl.srcId === -1 || hl.srcId === 0) {
+            hl.srcId = FloatingWindow.srcId;
           }
           void this.buffer.addHighlight(hl);
         }
