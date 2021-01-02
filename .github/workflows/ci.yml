@@ -28,14 +28,14 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install yarn
+      - name: Install pnpm
         run: |
-          curl --compressed -o- -L https://yarnpkg.com/install.sh | bash
+          npm install -g pnpm
       - uses: actions/checkout@v1
       - name: Install Packages
-        run: yarn
+        run: pnpm install
       - name: Lint
-        run: yarn lint
+        run: pnpm run lint
       - name: Install vim
         uses: rhysd/action-setup-vim@v1
         with:
@@ -44,4 +44,4 @@ jobs:
       - name: Run unit tests
         env:
           NODE_ENV: test
-        run: yarn test
+        run: pnpm test
