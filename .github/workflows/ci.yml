@@ -25,16 +25,13 @@ jobs:
 
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install yarn
-        run: |
-          curl --compressed -o- -L https://yarnpkg.com/install.sh | bash
       - name: Install pnpm
         run: |
           npm install -g pnpm
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Install Packages
         run: pnpm install
       - name: Lint
