@@ -1,7 +1,6 @@
 import { commands, Disposable, ExtensionContext } from 'coc.nvim';
-import { helperAsyncCatch } from '.';
 import { utilModule } from './modules/util';
-import { genOnError, helperOnError, versionName } from './util';
+import { HelperLogger, helperLogger, versionName } from './util';
 import { VimModule } from './VimModule';
 
 type Arguments<F extends Function> = F extends (...args: infer Args) => any
@@ -28,7 +27,7 @@ export class HelperEventEmitter<
   listenersMap = new Map<keyof Events, HelperEventEmitter.EventListener[]>();
 
   constructor(
-    protected onError: ReturnType<typeof genOnError>,
+    protected helperLogger: HelperLogger,
     public readonly concurrent = false,
   ) {}
 
@@ -74,7 +73,7 @@ export class HelperEventEmitter<
           try {
             await listener(...args);
           } catch (e) {
-            this.onError(e);
+            this.helperLogger.error(e);
           }
         }),
       );
@@ -83,7 +82,7 @@ export class HelperEventEmitter<
         try {
           await listener(...args);
         } catch (e) {
-          this.onError(e);
+          this.helperLogger.error(e);
         }
       }
     }
@@ -127,7 +126,7 @@ export class HelperVimEvents<
       keyof VimEvents,
       HelperEventEmitter.VimEventOptions
     >,
-    protected onError: ReturnType<typeof genOnError>,
+    protected helperLogger: HelperLogger,
     protected options: {
       name?: string;
       augroupName?: string;
@@ -151,7 +150,10 @@ export class HelperVimEvents<
       `coc-helper.internal.didVimEvent_${
         options.name ? `${options.name}_` : ''
       }${this.id}`;
-    this.events = new HelperEventEmitter(onError, options.concurrent ?? false);
+    this.events = new HelperEventEmitter(
+      this.helperLogger,
+      options.concurrent ?? false,
+    );
   }
 
   async register(context: ExtensionContext) {
@@ -173,7 +175,7 @@ export class HelperVimEvents<
     context.subscriptions.push(
       commands.registerCommand(
         this.commandName,
-        helperAsyncCatch((event: any, ...args: any[]) =>
+        helperLogger.asyncCatch((event: any, ...args: any[]) =>
           this.events.fire(event, ...(args as any)),
         ),
         undefined,
@@ -197,7 +199,7 @@ export const helperVimEvents = new HelperVimEvents<{
       argExprs: ["+expand('<abuf>')"],
     },
   },
-  helperOnError,
+  helperLogger,
 );
 
 export const helperEvents = helperVimEvents.events;

@@ -1,5 +1,4 @@
-import { workspace, Buffer } from 'coc.nvim';
-import { BufferHighlight } from '@chemzqm/neovim';
+import { workspace, Buffer, BufferHighlight, Range } from 'coc.nvim';
 import { utilModule } from './modules/util';
 import { FloatingWindow } from './FloatingWindow';
 import { Notifier } from './notifier';
@@ -499,9 +498,7 @@ export class FloatingUtil {
       void buf.setLines(lines, { start: 0, end: -1 }, true);
       buf.setOption('modifiable', false, true);
       buf.setOption('readonly', true, true);
-      for (const hl of highlights) {
-        void buf.addHighlight(hl);
-      }
+      this.addHighlightsNotify(buf, highlights);
     });
   }
 
@@ -513,5 +510,16 @@ export class FloatingUtil {
     arr.push('Normal:' + (options.winHl ?? defaultWinHl));
     arr.push('NormalNC:' + (options.winHlNC ?? defaultWinHlNC));
     return arr.join(',');
+  }
+
+  addHighlightsNotify(buf: Buffer, highlights: BufferHighlight[]) {
+    for (const hl of highlights) {
+      if (!hl.srcId || !hl.hlGroup || !hl.line || !hl.colStart || !hl.colEnd) {
+        continue;
+      }
+      buf.highlightRanges(this.srcId, hl.hlGroup, [
+        Range.create(hl.line, hl.colStart, hl.line, hl.colEnd),
+      ]);
+    }
   }
 }

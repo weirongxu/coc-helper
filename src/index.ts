@@ -1,4 +1,10 @@
-import { commands, events, ExtensionContext, workspace } from 'coc.nvim';
+import {
+  commands,
+  events,
+  ExtensionContext,
+  window,
+  workspace,
+} from 'coc.nvim';
 import { helperEvents, helperVimEvents } from './events';
 import { FloatingWindow } from './FloatingWindow';
 import { MultiFloatingWindow } from './MultiFloatingWindow';
@@ -42,7 +48,7 @@ export async function activateHelper(
     );
   } catch (error) {
     // eslint-disable-next-line no-restricted-properties
-    workspace.showMessage(error, 'error');
+    window.showMessage(error, 'error');
   }
 }
 
@@ -54,7 +60,7 @@ export async function activate(context: ExtensionContext) {
 
   helperEvents.on('BufDelete', (bufnr) => {
     // eslint-disable-next-line no-restricted-properties
-    workspace.showMessage('buffer delete ' + bufnr);
+    window.showMessage('buffer delete ' + bufnr);
   });
 
   await workspace.nvim.command(

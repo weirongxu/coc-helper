@@ -1,5 +1,5 @@
-import { jestHelper } from './JestHelper';
-import { helperOnError } from './util';
+import { jestHelper } from './jest/JestHelper';
+import { helperLogger } from './util';
 import { VimModule } from './VimModule';
 
 const fnTest = VimModule.create('fn_test', (m) => {
@@ -35,7 +35,7 @@ beforeAll(async () => {
     subscriptions: [],
     asAbsolutePath: () => '',
     workspaceState: null as any,
-  }).catch(helperOnError);
+  }).catch(helperLogger.error);
 });
 
 test('fn', async () => {

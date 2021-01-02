@@ -1,52 +1,68 @@
-import { OutputChannel, workspace } from 'coc.nvim';
+import { OutputChannel, window, Disposable } from 'coc.nvim';
 import util from 'util';
 import { isTest } from './env';
 
-export const helperOutputChannel = workspace.createOutputChannel('coc-helper');
+type AsyncCatchFn = (...args: any) => any | Promise<any>;
 
-export function genOnError(outputChannel: OutputChannel) {
-  return (error: Error | string) => {
+export class HelperLogger implements Disposable {
+  private outputChannel_?: OutputChannel;
+  constructor(public readonly channelName: string) {
+    this.appendLine = this.appendLine.bind(this);
+    this.error = this.error.bind(this);
+  }
+
+  dispose() {
+    this.outputChannel_?.dispose();
+  }
+
+  get outputChannel() {
+    if (!this.outputChannel_) {
+      this.outputChannel_ = window.createOutputChannel(this.channelName);
+    }
+    return this.outputChannel_;
+  }
+
+  appendLine(line: string) {
+    this.outputChannel.appendLine(line);
+  }
+
+  error(error: Error | string) {
     if (error instanceof Error) {
       // eslint-disable-next-line no-restricted-properties
-      workspace.showMessage(error.message, 'error');
-      outputChannel.appendLine(error.stack ?? error.toString());
+      window.showMessage(error.message, 'error');
+      this.outputChannel?.appendLine(error.stack ?? error.toString());
       if (isTest) {
         // eslint-disable-next-line no-console
         console.error(error.stack ?? error.toString());
       }
     } else {
       // eslint-disable-next-line no-restricted-properties
-      workspace.showMessage(error, 'error');
-      outputChannel.appendLine(error);
+      window.showMessage(error, 'error');
+      this.outputChannel?.appendLine(error);
       if (isTest) {
         // eslint-disable-next-line no-console
         console.error(error);
       }
     }
-  };
-}
+  }
 
-export const helperOnError = genOnError(helperOutputChannel);
-
-type AsyncCatchFn = (...args: any) => any | Promise<any>;
-
-export function genAsyncCatch(
-  catchError: (error: Error) => any,
-): (fn: AsyncCatchFn) => AsyncCatchFn {
-  return (fn) => {
+  /**
+   * Wrap the async function and catch the error
+   */
+  asyncCatch(fn: AsyncCatchFn): AsyncCatchFn {
     return async (...args) => {
       try {
         return await fn(...args);
       } catch (e) {
-        catchError(e);
+        this.error(e);
       }
     };
-  };
+  }
 }
 
-export const helperAsyncCatch = genAsyncCatch(helperOnError);
+export const helperLogger = new HelperLogger('coc-helper');
 
-export function prettyObject(...data: any[]) {
+export function prettyObject(...data: any[]): string {
   const padZore = (s: number) => s.toString(10).padStart(2, '0');
   const date = new Date();
   let s = `[${date.getFullYear()}/${padZore(date.getMonth() + 1)}/${padZore(
@@ -61,6 +77,7 @@ export function prettyObject(...data: any[]) {
 }
 
 export function prettyPrint(...data: any[]) {
+  helperLogger.appendLine(prettyObject(...data));
   // eslint-disable-next-line no-restricted-properties
-  workspace.showMessage(prettyObject(...data));
+  window.showMessage(prettyObject(...data));
 }

@@ -1,4 +1,4 @@
-import { jestHelper } from './JestHelper';
+import { jestHelper } from './jest/JestHelper';
 import { FloatingUtil } from './FloatingUtil';
 
 jestHelper.boot();

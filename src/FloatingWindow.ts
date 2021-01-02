@@ -1,9 +1,15 @@
-import { Buffer, Disposable, disposeAll, events, workspace } from 'coc.nvim';
-import { BufferHighlight } from '@chemzqm/neovim';
+import {
+  Buffer,
+  BufferHighlight,
+  Disposable,
+  disposeAll,
+  events,
+  workspace,
+} from 'coc.nvim';
 import { Notifier } from './notifier';
 import { floatingModule } from './modules/floating';
 import { utilModule } from './modules/util';
-import { helperAsyncCatch } from './util';
+import { helperLogger } from './util';
 import { FloatingUtil } from './FloatingUtil';
 
 export namespace FloatingWindow {
@@ -249,7 +255,7 @@ export class FloatingWindow implements Disposable {
       this.disposables.push(
         events.on(
           'BufWinLeave',
-          helperAsyncCatch(async (curBufnr) => {
+          helperLogger.asyncCatch(async (curBufnr) => {
             // close border win
             if (this.borderBufnr && curBufnr === this.bufnr) {
               await utilModule.closeWinByBufnr.call([this.borderBufnr]);
@@ -319,7 +325,7 @@ export class FloatingWindow implements Disposable {
           if (hl.srcId === undefined || hl.srcId === -1 || hl.srcId === 0) {
             hl.srcId = FloatingWindow.srcId;
           }
-          void this.buffer.addHighlight(hl);
+          this.util.addHighlightsNotify(this.buffer, [hl]);
         }
       }
       if (workspace.isVim) {
