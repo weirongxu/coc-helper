@@ -13,7 +13,7 @@ process.on('uncaughtException', function (err) {
 });
 
 function execCli(name, args, options) {
-  const streams = spawn(name, args, options);
+  const streams = spawn(name, args, { shell: true, ...options });
 
   let output = '';
   streams.stdout.on('data', (data) => {
