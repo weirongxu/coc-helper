@@ -29,15 +29,6 @@ function execCli(name, args, options) {
   });
 }
 
-async function copySchema(cocDir, dataDir) {
-  const schemaPath = pathLib.join(dataDir, 'schema.json');
-  if (!fs.existsSync(schemaPath)) {
-    await fsp.mkdir(dataDir, { recursive: true });
-
-    await fsp.copyFile(pathLib.join(cocDir, 'data/schema.json'), schemaPath);
-  }
-}
-
 module.exports = async () => {
   const testsDir = __dirname;
   const cocDir = pathLib.join(testsDir, 'coc.nvim');
@@ -65,11 +56,6 @@ module.exports = async () => {
       cwd: cocDir,
     });
   }
-
-  // await copySchema(
-  //   cocDir,
-  //   pathLib.join(appRootPath.path, 'node_modules/coc.nvim/data'),
-  // );
 
   process.env.NODE_ENV = 'test';
   process.env.COC_DATA_HOME = pathLib.join(testsDir, 'coc-data-home');
