@@ -15,7 +15,6 @@
     "JestHelper.d.ts"
   ],
   "scripts": {
-    "preinstall": "npx only-allow pnpm",
     "clean": "rimraf lib",
     "copy:pkg": "cpy --rename=_package.json package.json src/",
     "build:esm": "tsc -p ./tsconfig.prod.json --module es2015 --outDir lib/esm",
