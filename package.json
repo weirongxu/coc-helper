@@ -11,13 +11,14 @@
   "files": [
     "lib",
     "tests",
+    "jest.config.js",
     "JestHelper.js",
     "JestHelper.d.ts"
   ],
   "scripts": {
     "clean": "rimraf lib",
     "copy:pkg": "cpy --rename=_package.json package.json src/",
-    "build:esm": "tsc -p ./tsconfig.prod.json --module es2015 --outDir lib/esm",
+    "build:esm": "tsc -p ./tsconfig.prod.json --module es2020 --outDir lib/esm",
     "build:cjs": "tsc -p ./tsconfig.prod.json --module commonjs --outDir lib/cjs",
     "build": "npm-run-all clean copy:pkg build:esm build:cjs",
     "lint": "eslint src --ext ts",

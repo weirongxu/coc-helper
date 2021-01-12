@@ -16,8 +16,10 @@ import os from 'os';
 import pathLib from 'path';
 import util from 'util';
 import { v4 as uuid } from 'uuid';
-import attach from '../../tests/coc.nvim/lib/attach';
-import Plugin from '../../tests/coc.nvim/lib/plugin';
+// @ts-ignore
+import attach from 'coc.nvim/lib/attach';
+// @ts-ignore
+import Plugin from 'coc.nvim/lib/plugin';
 import { workspace, VimCompleteItem, Document } from 'coc.nvim';
 
 // @ts-ignore
