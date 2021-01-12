@@ -49,25 +49,16 @@ module.exports = async () => {
         cwd: testsDir,
       },
     );
-    await execCli('yarn', ['install'], {
-      cwd: cocDir,
-    });
-    await execCli('yarn', ['tsc'], {
-      cwd: cocDir,
-    });
   }
+  await execCli('yarn', ['install'], {
+    cwd: cocDir,
+  });
+  await execCli('yarn', ['tsc'], {
+    cwd: cocDir,
+  });
 
   process.env.NODE_ENV = 'test';
   process.env.COC_DATA_HOME = pathLib.join(testsDir, 'coc-data-home');
   process.env.COC_VIMCONFIG = testsDir;
   process.env.TMPDIR = os.tmpdir();
-
-  const originalRequire = Module.prototype.require;
-  Module.prototype.require = function (p) {
-    //do your thing here
-    if (p === 'coc.nvim') {
-      return originalRequire(cocDir);
-    }
-    return originalRequire.apply(this, arguments);
-  };
 };
