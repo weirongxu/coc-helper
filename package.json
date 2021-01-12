@@ -51,7 +51,7 @@
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.11.0",
     "@typescript-eslint/parser": "^4.11.0",
-    "coc.nvim": "^0.0.80",
+    "coc.nvim": "0.0.81-next.0",
     "cpy-cli": "^3.1.1",
     "eslint": "^7.16.0",
     "jest": "^26.6.3",
