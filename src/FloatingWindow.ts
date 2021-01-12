@@ -406,7 +406,7 @@ export class FloatingWindow implements Disposable {
       this.setLinesNotifier(options),
       Notifier.create(() => {
         if (options.filetype) {
-          this.buffer.setOption('&filetype', options.filetype, true);
+          this.buffer.setOption('filetype', options.filetype, true);
         }
       }),
     );

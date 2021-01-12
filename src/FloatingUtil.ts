@@ -1,8 +1,8 @@
-import { workspace, Buffer, BufferHighlight, Range } from 'coc.nvim';
-import { utilModule } from './modules/util';
+import { Buffer, BufferHighlight, Range, workspace } from 'coc.nvim';
 import { FloatingWindow } from './FloatingWindow';
+import { utilModule } from './modules/util';
 import { Notifier } from './notifier';
-import { byteLength, displayWidth } from './util';
+import { displayWidth } from './util';
 
 const defaultBorderChars = ['─', '│', '─', '│', '┌', '┐', '┘', '└'];
 const defaultWinHl = 'CocHelperNormalFloat';
@@ -435,7 +435,7 @@ export class FloatingUtil {
         hlGroup: borderWinHl,
         line: 0,
         colStart: 0,
-        colEnd: -1,
+        colEnd: width,
       });
       for (let l = 0, len = spaceHeight; l < len; l++) {
         if (bLeft) {
@@ -444,7 +444,7 @@ export class FloatingUtil {
             hlGroup: borderWinHl,
             line: l + 1,
             colStart: 0,
-            colEnd: byteLength(cLeft),
+            colEnd: bLeft,
           });
         }
         if (bRight) {
@@ -452,8 +452,8 @@ export class FloatingUtil {
             srcId: this.srcId,
             hlGroup: borderWinHl,
             line: l + 1,
-            colStart: byteLength(cLeft) + spaceWidth,
-            colEnd: -1,
+            colStart: bLeft + spaceWidth,
+            colEnd: width,
           });
         }
       }
@@ -463,7 +463,7 @@ export class FloatingUtil {
           hlGroup: borderWinHl,
           line: height - 1,
           colStart: 0,
-          colEnd: -1,
+          colEnd: width,
         });
       }
     }
@@ -514,7 +514,13 @@ export class FloatingUtil {
 
   addHighlightsNotify(buf: Buffer, highlights: BufferHighlight[]) {
     for (const hl of highlights) {
-      if (!hl.srcId || !hl.hlGroup || !hl.line || !hl.colStart || !hl.colEnd) {
+      if (
+        !hl.srcId ||
+        !hl.hlGroup ||
+        hl.line === undefined ||
+        hl.colStart === undefined ||
+        hl.colEnd === undefined
+      ) {
         continue;
       }
       buf.highlightRanges(this.srcId, hl.hlGroup, [

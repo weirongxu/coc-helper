@@ -77,9 +77,10 @@ export async function activate(context: ExtensionContext) {
     mode: 'base',
   });
   commands.registerCommand('testHelper-floating', async () => {
+    const text = 'hello';
     await floatWin.open({
       relative: 'cursor-around',
-      lines: ['hello'],
+      lines: [text],
       top: 0,
       left: 0,
       title: 'test',
@@ -90,6 +91,15 @@ export async function activate(context: ExtensionContext) {
       modifiable: true,
       focus: true,
       filetype: 'test',
+      highlights: [
+        {
+          line: 0,
+          srcId: 0,
+          colStart: 0,
+          colEnd: text.length,
+          hlGroup: 'Question',
+        },
+      ],
     });
     await sleep(2000);
     await floatWin.resize({
@@ -175,7 +185,7 @@ export async function activate(context: ExtensionContext) {
             {
               line: 0,
               srcId: 0,
-              colEnd: -1,
+              colEnd: promptText.length,
               colStart: 0,
               hlGroup: 'Question',
             },
