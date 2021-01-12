@@ -1,6 +1,6 @@
 {
   "name": "coc-helper",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Helpers for coc.nvim",
   "module": "lib/esm/index.js",
   "main": "lib/cjs/index.js",
