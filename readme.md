@@ -211,10 +211,16 @@ await nvim.resumeNotification();
 jest.config.json
 
 ```javascript
+const jest = require('./node_modules/coc-helper/jest.config.js');
+
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  globalSetup: './node_modules/coc-helper/tests/jest-setup.js',
+  ...jest,
+  // your jest configuration in here
+  // clearMocks: true,
+  // moduleNameMapper: {
+  //   ...jest.moduleNameMapper,
+  //   '^lodash-es$': 'lodash',
+  // },
 };
 ```
 
