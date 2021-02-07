@@ -1,0 +1,6 @@
+{
+  "extends": "./coc.nvim/tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true
+  }
+}

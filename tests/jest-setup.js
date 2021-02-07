@@ -50,10 +50,10 @@ module.exports = async () => {
       },
     );
   }
-  await execCli('yarn', ['install'], {
+  await execCli('yarn', ['install', '--frozen-lockfile'], {
     cwd: cocDir,
   });
-  await execCli('yarn', ['tsc'], {
+  await execCli('yarn', ['run', 'tsc', '-p', ''], {
     cwd: cocDir,
   });
 
