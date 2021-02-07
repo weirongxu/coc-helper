@@ -55,12 +55,17 @@ module.exports = async () => {
   await execCli('yarn', ['run', 'tsc', '--skipLibCheck'], {
     cwd: cocDir,
   });
-  rimraf.sync(libDir + '.back');
-  fs.renameSync(pathLib.join(cocDir, 'lib'), pathLib.join(cocDir, 'lib.back'));
-  fs.renameSync(
-    pathLib.join(cocDir, 'lib.back/src'),
-    pathLib.join(cocDir, 'lib'),
-  );
+  if (fs.existsSync(pathLib.join(libDir, 'src'))) {
+    rimraf.sync(libDir + '.back');
+    fs.renameSync(
+      pathLib.join(cocDir, 'lib'),
+      pathLib.join(cocDir, 'lib.back'),
+    );
+    fs.renameSync(
+      pathLib.join(cocDir, 'lib.back/src'),
+      pathLib.join(cocDir, 'lib'),
+    );
+  }
 
   process.env.NODE_ENV = 'test';
   process.env.COC_DATA_HOME = pathLib.join(testsDir, 'coc-data-home');
