@@ -146,7 +146,7 @@ export class VimModule {
     const content = getContent({ name: name });
     const debugKey = `${this.moduleKey}.${fnName}`;
     this.registerInit(async () => {
-      helperLogger.appendLine(`declare fn ${debugKey}`);
+      helperLogger.debug(`declare fn ${debugKey}`);
       await nvim.call('execute', [filterLineCont(content)]);
     });
     return {
@@ -154,7 +154,7 @@ export class VimModule {
       inlineCall: (argsExpression: string = '') =>
         `${callFunc}('${this.moduleKey}', '${fnName}', [${argsExpression}])`,
       call: (...args: Args) => {
-        helperLogger.appendLine(`call ${debugKey}`);
+        helperLogger.debug(`call ${debugKey}`);
         return nvim.call(callFunc, [
           this.moduleKey,
           fnName,
@@ -162,11 +162,11 @@ export class VimModule {
         ]) as Promise<R>;
       },
       callNotify: (...args: Args) => {
-        helperLogger.appendLine(`callNotify ${debugKey}`);
+        helperLogger.debug(`callNotify ${debugKey}`);
         return nvim.call(callFunc, [this.moduleKey, fnName, args], true);
       },
       callNotifier: (...args: Args) => {
-        helperLogger.appendLine(`callNotifier ${debugKey}`);
+        helperLogger.debug(`callNotifier ${debugKey}`);
         return Notifier.create(() => {
           nvim.call(callFunc, [this.moduleKey, fnName, args], true);
         });
@@ -180,7 +180,7 @@ export class VimModule {
     const debugKey = `${this.moduleKey}.${varName}`;
 
     this.registerInit(async () => {
-      helperLogger.appendLine(`declare var ${debugKey}`);
+      helperLogger.debug(`declare var ${debugKey}`);
       await nvim.call(declareVar, [
         this.moduleKey,
         varName,
