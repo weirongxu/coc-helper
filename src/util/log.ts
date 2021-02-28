@@ -19,7 +19,10 @@ type LevelStatus = typeof levelList[number];
 type LevelLog = Exclude<LevelStatus, 'off'>;
 
 function formatDate(date: Date) {
-  return `${date.toLocaleString()} ${date.getMilliseconds()}`;
+  return `${date.toLocaleString()} ${date
+    .getMilliseconds()
+    .toString()
+    .padStart(3, '0')}`;
 }
 
 export class HelperLogger implements Disposable {
@@ -206,5 +209,5 @@ export function prettyObject(...data: any[]): string {
 export function prettyPrint(...data: any[]) {
   helperLogger.info(prettyObject(...data));
   // eslint-disable-next-line no-restricted-properties
-  window.showMessage(`${formatDate(new Date())}${prettyObject(...data)}`);
+  window.showMessage(`[${formatDate(new Date())}] ${prettyObject(...data)}`);
 }
