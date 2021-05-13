@@ -30,7 +30,7 @@ export const floatingModule = VimModule.create('float', (m) => {
     isNvim
       ? `
         function! ${name}(bufnr, focus, win_config, win_hl, inited_execute) abort
-          let winid = nvim_open_win(a:bufnr, a:focus, a:win_config)
+          noau let winid = nvim_open_win(a:bufnr, a:focus, a:win_config)
           if !empty(a:win_hl)
             call nvim_win_set_option(winid, 'winhl', a:win_hl)
           endif
