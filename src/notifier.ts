@@ -6,17 +6,17 @@ export namespace Notifier {
 }
 
 export class Notifier {
-  static async run(notifierPromise: Notifier.Cell | Promise<Notifier.Cell>) {
-    if (!notifierPromise) {
+  static async run(notifier: Notifier.Cell | Promise<Notifier.Cell>) {
+    if (!notifier) {
       return;
     }
-    if ('then' in notifierPromise) {
-      const lazy = await notifierPromise;
-      if (lazy) {
-        return lazy.run();
+    if ('then' in notifier) {
+      const awaitedNotifier = await notifier;
+      if (awaitedNotifier) {
+        return awaitedNotifier.run();
       }
     } else {
-      return notifierPromise.run();
+      return notifier.run();
     }
   }
 
@@ -38,14 +38,17 @@ export class Notifier {
   }
 
   static combine(notifiers: Notifier.Cell[]) {
-    const safeNotifiers = compactI(notifiers);
-    if (safeNotifiers.length < 1) {
+    const compactedNotifiers = compactI(notifiers);
+    if (compactedNotifiers.length < 1) {
       return Notifier.noop();
     }
-    if (safeNotifiers.length === 1) {
-      return safeNotifiers[0];
+    if (compactedNotifiers.length === 1) {
+      return compactedNotifiers[0];
     }
-    return safeNotifiers.reduce((ret, cur) => ret.concat(cur), Notifier.noop());
+    return compactedNotifiers.reduce(
+      (ret, cur) => ret.concat(cur),
+      Notifier.noop(),
+    );
   }
 
   static noop() {
