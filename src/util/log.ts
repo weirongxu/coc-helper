@@ -118,6 +118,9 @@ export class HelperLogger implements Disposable {
   }
 
   error(data: string | Error) {
+    if (!(data instanceof Error)) {
+      data = new Error(data);
+    }
     this.log('error', data);
   }
 
