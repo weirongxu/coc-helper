@@ -201,6 +201,12 @@ export class HelperLogger implements Disposable {
       }
     };
   }
+
+  prettyPrint(...data: any[]) {
+    this.info(prettyObject(...data));
+    // eslint-disable-next-line no-restricted-properties
+    window.showMessage(`[${formatDate(new Date())}] ${prettyObject(...data)}`);
+  }
 }
 
 export const helperLogger = new HelperLogger('coc-helper');
@@ -210,7 +216,5 @@ export function prettyObject(...data: any[]): string {
 }
 
 export function prettyPrint(...data: any[]) {
-  helperLogger.info(prettyObject(...data));
-  // eslint-disable-next-line no-restricted-properties
-  window.showMessage(`[${formatDate(new Date())}] ${prettyObject(...data)}`);
+  helperLogger.prettyPrint(...data);
 }
