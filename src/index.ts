@@ -31,12 +31,12 @@ export async function activateHelper(
     vimModule?: boolean;
     /**
      * activate helperVimEvents and helperEvents
-     * @default false
+     * @default true
      */
     events?: boolean;
   } = {},
 ) {
-  if (options.vimModule ?? true) {
+  if (options.vimModule ?? options.events ?? true) {
     await VimModule.init(context);
   }
   if (options.events ?? true) {

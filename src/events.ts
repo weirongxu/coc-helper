@@ -1,7 +1,11 @@
 import { commands, Disposable, ExtensionContext } from 'coc.nvim';
 import { utilModule } from './modules/util';
 import { HelperLogger, helperLogger, versionName } from './util';
+import { getModuleId } from './util/module';
 import { VimModule } from './VimModule';
+
+const mid = getModuleId('events');
+const uname = `m${mid}_v${versionName}`;
 
 type Arguments<F extends Function> = F extends (...args: infer Args) => any
   ? Args
@@ -22,7 +26,7 @@ namespace HelperEventEmitter {
 }
 
 export class HelperEventEmitter<
-  Events extends Record<string, HelperEventEmitter.EventListener>
+  Events extends Record<string, HelperEventEmitter.EventListener>,
 > {
   listenersMap = new Map<keyof Events, HelperEventEmitter.EventListener[]>();
 
@@ -112,14 +116,12 @@ export class HelperEventEmitter<
  * ```
  */
 export class HelperVimEvents<
-  VimEvents extends Record<string, HelperEventEmitter.EventListener>
+  VimEvents extends Record<string, HelperEventEmitter.EventListener>,
 > {
-  static ID = 0;
-
-  public events: HelperEventEmitter<VimEvents>;
-  public augroupName: string;
-  public commandName: string;
-  public id: number;
+  public readonly events: HelperEventEmitter<VimEvents>;
+  public readonly augroupName: string;
+  public readonly commandName: string;
+  public readonly id: number;
 
   constructor(
     protected vimEvents: Record<
@@ -129,27 +131,19 @@ export class HelperVimEvents<
     protected helperLogger: HelperLogger,
     protected options: {
       name?: string;
-      augroupName?: string;
-      commandName?: string;
       /**
        * @default false
        */
       concurrent?: boolean;
     } = {},
   ) {
-    ++HelperVimEvents.ID;
-    this.id = HelperVimEvents.ID;
-    this.augroupName =
-      options.augroupName ??
-      `CocHelperInternal_${versionName}_${
-        options.name ? `${options.name}_` : ''
-      }${this.id}`;
-    this.commandName =
-      options.commandName ??
-      options.commandName ??
-      `coc-helper.internal.didVimEvent_${
-        options.name ? `${options.name}_` : ''
-      }${this.id}`;
+    this.id = getModuleId('events.id');
+    this.augroupName = `CocHelperInternal_${uname}_${
+      options.name ? `${options.name}_` : ''
+    }${this.id}`;
+    this.commandName = `coc-helper.internal.didVimEvent_${uname}_${
+      options.name ? `${options.name}_` : ''
+    }${this.id}`;
     this.events = new HelperEventEmitter(
       this.helperLogger,
       options.concurrent ?? false,
@@ -200,6 +194,9 @@ export const helperVimEvents = new HelperVimEvents<{
     },
   },
   helperLogger,
+  {
+    name: 'coc_helper',
+  },
 );
 
 export const helperEvents = helperVimEvents.events;
