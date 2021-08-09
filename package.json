@@ -43,6 +43,7 @@
     "coc.nvim": "*"
   },
   "devDependencies": {
+    "@chemzqm/neovim": "^5.3.4",
     "@types/eslint": "^7.28.0",
     "@types/jest": "^26.0.24",
     "@types/node": "^16.4.13",
