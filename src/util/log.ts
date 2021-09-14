@@ -152,11 +152,19 @@ export class HelperLogger implements Disposable {
     }
   }
 
-  measureTime<T>(task: () => Promise<T>): Promise<[T, number]>;
-  measureTime<T>(task: () => T): [T, number];
+  /**
+   * Executes the task and returns task result and elapsed time in milliseconds.
+   * @returns [taskResult, milliseconds]
+   */
+  measureTime<T>(
+    task: () => Promise<T>,
+  ): Promise<[taskResult: T, milliseconds: number]>;
+  measureTime<T>(task: () => T): [taskResult: T, milliseconds: number];
   measureTime<T>(
     task: () => T | Promise<T>,
-  ): [T, number] | Promise<[T, number]> {
+  ):
+    | [taskResult: T, milliseconds: number]
+    | Promise<[taskResult: T, milliseconds: number]> {
     const time = new Date().valueOf();
     const result = task();
     if (!('then' in result)) {
@@ -167,6 +175,10 @@ export class HelperLogger implements Disposable {
     });
   }
 
+  /**
+   * Executes the task and returns elapsed time in milliseconds.
+   * @returns taskResult
+   */
   measureTask<T>(
     task: () => Promise<T>,
     label?: string,
@@ -205,6 +217,9 @@ export class HelperLogger implements Disposable {
     };
   }
 
+  /**
+   * Print data to outputChannel and vim message
+   */
   prettyPrint(...data: any[]) {
     this.info(prettyObject(...data));
     // eslint-disable-next-line no-restricted-properties

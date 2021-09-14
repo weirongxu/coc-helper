@@ -218,11 +218,48 @@ callNotifierCombined.notify();
 await nvim.resumeNotification();
 ```
 
+### HelperLogger
+
+Logger with OutputChannel support
+
+```typescript
+import { ExtensionContext } from 'coc.nvim';
+import { HelperLogger } from 'coc-helper';
+const logger = new HelperLogger('extensionChannelName');
+
+// OutputChannel
+const channel = logger.outputChannel;
+
+function activate(context: ExtensionContext) {
+  // Change level
+  logger.level = isDebug ? 'debug' : 'info';
+}
+
+async function stuff() {
+  logger.info('info');
+  logger.warn('info');
+  // Log and print error
+  logger.error('error');
+
+  logger.prettyPrint({ token: 'xxx', data: 'foo' });
+
+  const [jobReturn, elapsedMilliseconds] = logger.measureTime(async () => {
+    return await asyncJobs();
+  });
+
+  await helperLogger.measureTask(async () => {
+    await asyncJobs();
+  }, 'job name');
+}
+```
+
 ### HelperEventEmitter
+
+Typed events emitter
 
 ```typescript
 import { HelperEventEmitter, HelperLogger } from 'coc-helper';
-const logger = new HelperLogger('yourChannelName');
+const logger = new HelperLogger('extensionChannelName');
 
 interface Events {
   foo: (foo: number) => void;
