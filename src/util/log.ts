@@ -117,14 +117,17 @@ export class HelperLogger implements Disposable {
     this.log('warn', line);
   }
 
-  error(data: string | Error) {
+  /**
+   * Log and print error
+   */
+  error(data: any) {
     if (!(data instanceof Error)) {
       data = new Error(data);
     }
     this.log('error', data);
   }
 
-  fatal(data: string | Error) {
+  fatal(data: any) {
     this.log('fatal', data);
   }
 
@@ -197,7 +200,7 @@ export class HelperLogger implements Disposable {
       try {
         return await fn(...args);
       } catch (e) {
-        this.error(e);
+        this.error(e as Error);
       }
     };
   }

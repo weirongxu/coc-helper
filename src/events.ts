@@ -25,9 +25,7 @@ namespace HelperEventEmitter {
   }
 }
 
-export class HelperEventEmitter<
-  Events extends Record<string, HelperEventEmitter.EventListener>,
-> {
+export class HelperEventEmitter<Events extends Record<string, any>> {
   listenersMap = new Map<keyof Events, HelperEventEmitter.EventListener[]>();
 
   constructor(
@@ -42,6 +40,23 @@ export class HelperEventEmitter<
       return listeners;
     }
     return this.listenersMap.get(event)!;
+  }
+
+  once<E extends keyof Events>(
+    event: E,
+    listener: Events[E],
+    disposables?: Disposable[],
+  ) {
+    this.listeners(event as string).push(async (...args) => {
+      const result = await listener(...args);
+      disposable.dispose();
+      return result;
+    });
+    const disposable = Disposable.create(() => this.off(event, listener));
+    if (disposables) {
+      disposables.push(disposable);
+    }
+    return disposable;
   }
 
   on<E extends keyof Events>(

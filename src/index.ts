@@ -48,7 +48,7 @@ export async function activateHelper(
     );
   } catch (error) {
     // eslint-disable-next-line no-restricted-properties
-    window.showMessage(error, 'error');
+    window.showMessage((error as Error).toString(), 'error');
   }
 }
 
