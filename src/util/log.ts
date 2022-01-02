@@ -30,16 +30,7 @@ export class HelperLogger implements Disposable {
   private timeMarkers: Map<string, number> = new Map();
   private levelStatus: LevelStatus = 'trace';
   private levelNumber: number = levelList.indexOf(this.levelStatus);
-  constructor(public readonly channelName: string) {
-    this.appendLine = this.appendLine.bind(this);
-    this.log = this.log.bind(this);
-    this.trace = this.trace.bind(this);
-    this.debug = this.debug.bind(this);
-    this.info = this.info.bind(this);
-    this.warn = this.warn.bind(this);
-    this.error = this.error.bind(this);
-    this.fatal = this.fatal.bind(this);
-  }
+  constructor(public readonly channelName: string) {}
 
   /**
    * Default level is 'trace'
@@ -64,11 +55,11 @@ export class HelperLogger implements Disposable {
     return this.outputChannel_;
   }
 
-  appendLine(line: string) {
+  appendLine = (line: string) => {
     this.outputChannel.appendLine(line);
-  }
+  };
 
-  log(levelName: LevelLog, data: string | Error) {
+  log = (levelName: LevelLog, data: string | Error) => {
     const levelNum: number = levelList[levelName];
     if (levelNum < this.levelNumber) {
       return;
@@ -99,37 +90,37 @@ export class HelperLogger implements Disposable {
         console.error(data);
       }
     }
-  }
+  };
 
-  trace(line: string) {
+  trace = (line: string) => {
     this.log('trace', line);
-  }
+  };
 
-  debug(line: string) {
+  debug = (line: string) => {
     this.log('debug', line);
-  }
+  };
 
-  info(line: string) {
+  info = (line: string) => {
     this.log('info', line);
-  }
+  };
 
-  warn(line: string) {
+  warn = (line: string) => {
     this.log('warn', line);
-  }
+  };
 
   /**
    * Log and print error
    */
-  error(data: any) {
+  error = (data: any) => {
     if (!(data instanceof Error)) {
       data = new Error(data);
     }
     this.log('error', data);
-  }
+  };
 
-  fatal(data: any) {
+  fatal = (data: any) => {
     this.log('fatal', data);
-  }
+  };
 
   time(label: string = 'default') {
     this.timeMarkers.set(label, new Date().valueOf());
