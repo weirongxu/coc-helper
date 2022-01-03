@@ -507,8 +507,8 @@ export class FloatingUtil {
       return '';
     }
     const arr: string[] = [];
-    arr.push('Normal:' + (options.winHl ?? defaultWinHl));
-    arr.push('NormalNC:' + (options.winHlNC ?? defaultWinHlNC));
+    arr.push(`Normal:${options.winHl ?? defaultWinHl}`);
+    arr.push(`NormalNC:${options.winHlNC ?? defaultWinHlNC}`);
     return arr.join(',');
   }
 

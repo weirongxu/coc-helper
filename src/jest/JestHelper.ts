@@ -26,7 +26,7 @@ import { workspace, VimCompleteItem, Document } from 'coc.nvim';
 global.__TEST__ = true;
 
 process.on('uncaughtException', (err) => {
-  const msg = 'Uncaught exception: ' + err.stack;
+  const msg = `Uncaught exception: ${err.stack}`;
   // eslint-disable-next-line no-console
   console.error(msg);
 });
@@ -88,8 +88,8 @@ export class JestHelper extends EventEmitter {
       },
     ));
     const plugin = (this.plugin = attach({ proc }));
-    this.nvim = (plugin.nvim as unknown) as Neovim;
-    this.nvim.uiAttach(160, 80, {}).catch((_e) => {
+    this.nvim = plugin.nvim as unknown as Neovim;
+    this.nvim.uiAttach(160, 80, {}).catch(() => {
       // noop
     });
     proc.on('exit', () => {
@@ -207,7 +207,7 @@ export class JestHelper extends EventEmitter {
     if (!file || !pathLib.isAbsolute(file)) {
       file = pathLib.join(__dirname, file ? file : `${uuid()}`);
     }
-    const escaped = await this.nvim.call('fnameescape', file);
+    const escaped: string = await this.nvim.call('fnameescape', file);
     await this.nvim.command(`edit ${escaped}`);
     await this.wait(60);
     const bufnr = (await this.nvim.call('bufnr', ['%'])) as number;

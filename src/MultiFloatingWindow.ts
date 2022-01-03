@@ -29,7 +29,8 @@ export namespace MultiFloatingWindow {
 }
 
 export class MultiFloatingWindow<WinKeys extends string = string>
-  implements Disposable {
+  implements Disposable
+{
   static async create<WinKeys extends string = string>(
     options: MultiFloatingWindow.CreateOptions<WinKeys>,
   ) {
@@ -134,7 +135,14 @@ export class MultiFloatingWindow<WinKeys extends string = string>
 
     const notifiers: Notifier[] = [];
     for (const [key, floatWin] of Object.entries(this.floatWinDict)) {
-      const winOptions = options.wins[key];
+      const winOptions:
+        | undefined
+        | {
+            width: number;
+            height: number;
+            top: number;
+            left: number;
+          } = options.wins[key];
       if (!winOptions) {
         continue;
       }

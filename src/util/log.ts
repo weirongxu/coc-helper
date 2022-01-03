@@ -122,21 +122,21 @@ export class HelperLogger implements Disposable {
     this.log('fatal', data);
   };
 
-  time(label: string = 'default') {
+  time(label = 'default') {
     this.timeMarkers.set(label, new Date().valueOf());
   }
 
   /**
    * @returns milliseconds
    */
-  timeElapsed(label: string = 'default') {
+  timeElapsed(label = 'default') {
     const time = this.timeMarkers.get(label);
     if (time !== undefined) {
       return new Date().valueOf() - time;
     }
   }
 
-  timeLog(label: string = 'default') {
+  timeLog(label = 'default') {
     const time = this.timeElapsed(label);
     if (time !== undefined) {
       this.appendLine(`${label}: ${time} ms`);
@@ -178,7 +178,7 @@ export class HelperLogger implements Disposable {
   measureTask<T>(task: () => T, label?: string, level?: LevelLog): T;
   measureTask<T>(
     task: () => T | Promise<T>,
-    label: string = 'default',
+    label = 'default',
     level: LevelLog = 'info',
   ): T | Promise<T> {
     const response = this.measureTime(task) as
@@ -211,7 +211,7 @@ export class HelperLogger implements Disposable {
   /**
    * Print data to outputChannel and vim message
    */
-  prettyPrint(...data: any[]) {
+  prettyPrint(...data: unknown[]) {
     this.info(prettyObject(...data));
     // eslint-disable-next-line no-restricted-properties
     window.showMessage(`[${formatDate(new Date())}] ${prettyObject(...data)}`);
@@ -220,10 +220,10 @@ export class HelperLogger implements Disposable {
 
 export const helperLogger = new HelperLogger('coc-helper');
 
-export function prettyObject(...data: any[]): string {
+export function prettyObject(...data: unknown[]): string {
   return data.map((d) => util.inspect(d)).join(' ');
 }
 
-export function prettyPrint(...data: any[]) {
+export function prettyPrint(...data: unknown[]) {
   helperLogger.prettyPrint(...data);
 }

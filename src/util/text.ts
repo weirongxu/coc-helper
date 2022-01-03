@@ -2,11 +2,11 @@ import { MapMode, workspace } from 'coc.nvim';
 import { sum } from './collection';
 import { isWindows } from './env';
 
-export function generateUri(path: string, scheme: string = 'file') {
+export function generateUri(path: string, scheme = 'file') {
   if (scheme === 'file' && isWindows && /^[A-Za-z]:/.test(path)) {
-    path = '/' + path;
+    path = `/${path}`;
   }
-  return scheme + '://' + path;
+  return `${scheme}://${path}`;
 }
 
 export function byteIndex(content: string, index: number): number {

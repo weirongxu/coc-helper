@@ -7,7 +7,7 @@ import { VimModule } from './VimModule';
 const mid = getModuleId('events');
 const uname = `m${mid}_v${versionName}`;
 
-type Arguments<F extends Function> = F extends (...args: infer Args) => any
+type Arguments<F extends () => any> = F extends (...args: infer Args) => any
   ? Args
   : never;
 
@@ -176,8 +176,10 @@ export class HelperVimEvents<
     );
 
     context.subscriptions.push(
-      Disposable.create(async () => {
-        await eventsModule.deactivate.call(this.augroupName);
+      Disposable.create(() => {
+        eventsModule.deactivate
+          .call(this.augroupName)
+          .catch(this.helperLogger.error);
       }),
     );
 

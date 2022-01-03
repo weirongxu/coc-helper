@@ -172,14 +172,14 @@ export class VimModule {
   ): VimModule.FnCaller<Args, R> {
     const { nvim } = workspace;
     const name = `${globalVariable}.${this.moduleKey}.${fnName}`;
-    const content = getContent({ name: name });
+    const content = getContent({ name });
     this.registerInit(`fn ${name}`, async () => {
       helperLogger.debug(`declare fn ${name}`);
       await nvim.call('execute', [filterLineCont(content)]);
     });
     return {
       name,
-      inlineCall: (argsExpression: string = '') =>
+      inlineCall: (argsExpression = '') =>
         `${callFunc}('${this.moduleKey}', '${fnName}', [${argsExpression}])`,
       call: (...args: Args) => {
         helperLogger.debug(`call ${name}`);

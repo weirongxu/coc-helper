@@ -150,7 +150,7 @@ export class FloatingWindow implements Disposable {
 
         call setbufvar(${ctx.bufnr}, '&listchars', '')
         if has('nvim')
-          call setbufvar(${ctx.bufnr}, '&fillchars', 'eob:\ ')
+          call setbufvar(${ctx.bufnr}, '&fillchars', 'eob: ')
         endif
 
         call setbufvar(${ctx.bufnr}, '&signcolumn', 'no')
@@ -194,12 +194,9 @@ export class FloatingWindow implements Disposable {
   ): [initedExecute: string, borderInitedExecute: string] {
     let initedExecute =
       options.initedExecute?.(FloatingWindow.initedContextVars.create) ?? '';
-    initedExecute =
-      FloatingWindow.modePresets[mode].createInitedExecute(
-        FloatingWindow.initedContextVars.create,
-      ) +
-      '\n' +
-      initedExecute;
+    initedExecute = `${FloatingWindow.modePresets[mode].createInitedExecute(
+      FloatingWindow.initedContextVars.create,
+    )}\n${initedExecute}`;
     const borderInitedExecute =
       options.borderInitedExecute?.(FloatingWindow.initedContextVars.create) ??
       FloatingWindow.modePresets.show.createInitedExecute(
@@ -271,12 +268,9 @@ export class FloatingWindow implements Disposable {
   ): [initedExecute: string, borderInitedExecute: string] {
     let initedExecute =
       options.initedExecute?.(FloatingWindow.initedContextVars.open) ?? '';
-    initedExecute =
-      FloatingWindow.modePresets[this.mode].openInitedExecute(
-        FloatingWindow.initedContextVars.open,
-      ) +
-      '\n' +
-      initedExecute;
+    initedExecute = `${FloatingWindow.modePresets[this.mode].openInitedExecute(
+      FloatingWindow.initedContextVars.open,
+    )}\n${initedExecute}`;
     const borderInitedExecute =
       options.borderInitedExecute?.(FloatingWindow.initedContextVars.open) ??
       FloatingWindow.modePresets.show.openInitedExecute(
