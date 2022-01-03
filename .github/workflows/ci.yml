@@ -28,6 +28,9 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Set git
+        run: |
+          git config --global core.autocrlf false
       - uses: actions/checkout@v2
       - name: Install Packages
         run: yarn install
