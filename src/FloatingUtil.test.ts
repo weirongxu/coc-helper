@@ -4,7 +4,7 @@ import { FloatingUtil } from './FloatingUtil';
 jestHelper.boot();
 
 function getFloatUtil(): FloatingUtil {
-  return new FloatingUtil(0);
+  return new FloatingUtil('coc-helper');
 }
 
 function getCtx(): FloatingUtil.Context {

@@ -152,7 +152,6 @@ function displayStuff() {
         highlights: [
           {
             line: 0,
-            srcId: 0,
             colEnd: -1,
             colStart: 0,
             hlGroup: 'Question',

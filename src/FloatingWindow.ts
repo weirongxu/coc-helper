@@ -205,7 +205,7 @@ export class FloatingWindow implements Disposable {
     return [initedExecute, borderInitedExecute];
   }
 
-  static srcId = workspace.createNameSpace('coc-helper-floatwin');
+  static srcId = 'coc-helper-floatwin';
 
   static async create(options: FloatingWindow.CreateOptions = {}) {
     const mode = options.mode ?? 'default';
@@ -316,9 +316,6 @@ export class FloatingWindow implements Disposable {
       }
       if (options.highlights) {
         for (const hl of options.highlights) {
-          if (hl.srcId === undefined || hl.srcId === -1 || hl.srcId === 0) {
-            hl.srcId = FloatingWindow.srcId;
-          }
           this.util.addHighlightsNotify(this.buffer, [hl]);
         }
       }

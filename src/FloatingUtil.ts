@@ -68,7 +68,7 @@ export namespace FloatingUtil {
 }
 
 export class FloatingUtil {
-  constructor(protected srcId: number) {}
+  constructor(protected srcId: string) {}
 
   async createContext(
     options: FloatingWindow.OpenOptions,
@@ -431,7 +431,6 @@ export class FloatingUtil {
     const borderWinHl = options.borderWinHl ?? defaultBorderWinHl;
     if (borderWinHl) {
       highlights.push({
-        srcId: this.srcId,
         hlGroup: borderWinHl,
         line: 0,
         colStart: 0,
@@ -440,7 +439,6 @@ export class FloatingUtil {
       for (let l = 0, len = spaceHeight; l < len; l++) {
         if (bLeft) {
           highlights.push({
-            srcId: this.srcId,
             hlGroup: borderWinHl,
             line: l + 1,
             colStart: 0,
@@ -449,7 +447,6 @@ export class FloatingUtil {
         }
         if (bRight) {
           highlights.push({
-            srcId: this.srcId,
             hlGroup: borderWinHl,
             line: l + 1,
             colStart: bLeft + spaceWidth,
@@ -459,7 +456,6 @@ export class FloatingUtil {
       }
       if (bBottom) {
         highlights.push({
-          srcId: this.srcId,
           hlGroup: borderWinHl,
           line: height - 1,
           colStart: 0,
@@ -515,7 +511,6 @@ export class FloatingUtil {
   addHighlightsNotify(buf: Buffer, highlights: BufferHighlight[]) {
     for (const hl of highlights) {
       if (
-        !hl.srcId ||
         !hl.hlGroup ||
         hl.line === undefined ||
         hl.colStart === undefined ||
