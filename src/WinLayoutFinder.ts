@@ -22,6 +22,21 @@ export namespace WinLayoutFinder {
   export type Node = Group | Leaf;
 }
 
+/**
+ * Find the vim window by `winlayout()`
+ *
+ * @example
+ * ```
+ * const winFinder = WinLayoutFinder.create(tabnr);
+ * const leaf = winFinder.find(winid)
+ * // Parent
+ * const parent = leaf.parent;
+ * // Group type, 'col' or 'row'
+ * const parentType = parent.group.type;
+ * // Siblings
+ * const siblings = parent.group.children;
+ * ```
+ */
 export class WinLayoutFinder {
   private static convertVimLayoutNode(
     vimLayout: WinLayoutFinder.VimNode,
@@ -48,10 +63,17 @@ export class WinLayoutFinder {
     }
   }
 
-  static async create() {
+  /**
+   * Create a WinLayoutFinder instance
+   *
+   * @param tabnr The tabnr or use current tab with undefined
+   *
+   * @return Promise<WinLayoutFinder> instance
+   */
+  static async create(tabnr?: number) {
     const root: WinLayoutFinder.VimNode = await workspace.nvim.call(
       'winlayout',
-      [],
+      [tabnr],
     );
     return new this(this.convertVimLayoutNode(root));
   }

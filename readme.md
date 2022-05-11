@@ -270,6 +270,23 @@ events.on('foo', (foo) => {});
 events.fire('foo', 1);
 ```
 
+### WinLayoutFinder
+
+Find the vim window by `winlayout()`
+
+```typescript
+import { WinLayoutFinder } from 'coc-helper';
+
+const winFinder = WinLayoutFinder.create(tabnr);
+const leaf = winFinder.find(winid);
+// Parent
+const parent = leaf.parent;
+// Group type, 'col' or 'row'
+const parentType = parent.group.type;
+// Siblings
+const siblings = parent.group.children;
+```
+
 ### Jest setup and CI
 
 jest.config.json

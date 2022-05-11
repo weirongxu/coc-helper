@@ -5,7 +5,7 @@ const pathLib = require('path');
 const rimraf = require('rimraf');
 
 process.on('uncaughtException', function (err) {
-  const msg = 'Uncaught exception: ' + err.stack;
+  const msg = `Uncaught exception: ${err.stack}`;
   // eslint-disable-next-line no-console
   console.error(msg);
 });
@@ -57,7 +57,7 @@ module.exports = async () => {
     cwd: cocDir,
   });
   if (fs.existsSync(pathLib.join(libDir, 'src'))) {
-    rimraf.sync(libDir + '.back');
+    rimraf.sync(`${libDir}.back`);
     fs.renameSync(
       pathLib.join(cocDir, 'lib'),
       pathLib.join(cocDir, 'lib.back'),
