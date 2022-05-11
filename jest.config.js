@@ -5,7 +5,7 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/', '/tests'],
   modulePathIgnorePatterns: ['/tests'],
   moduleNameMapper: {
-    '^coc\\.nvim(.*)': `${__dirname}/tests/coc.nvim$1`,
+    '^coc\\.nvim(.*)': `${__dirname}/tests/coc.nvim/lib$1`,
   },
   verbose: true,
 };

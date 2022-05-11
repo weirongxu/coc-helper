@@ -5,25 +5,48 @@
  * 2020 Weirong Xu <weirongxu.raidou@gmail.com>
  *--------------------------------------------------------------------------------------------*/
 /**
- * modified from: https://github.com/neoclide/coc.nvim/blob/f40fdf889f65412d763cf43995f707b4b461e9f2/src/__tests__/helper.ts
+ * modified from: https://github.com/neoclide/coc.nvim/blob/5cf5117b9fbbd32d4e4bab2116c36685fee0d881/src/__tests__/helper.ts
  */
 
-import { Buffer, Neovim, Window } from '@chemzqm/neovim';
+import { Neovim, Window } from '@chemzqm/neovim';
 import * as cp from 'child_process';
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import os from 'os';
-import pathLib from 'path';
+import path from 'path';
 import util from 'util';
 import { v4 as uuid } from 'uuid';
 // @ts-ignore
-import attach from 'coc.nvim/lib/attach';
+import attach from 'coc.nvim/attach';
 // @ts-ignore
-import Plugin from 'coc.nvim/lib/plugin';
-import { workspace, VimCompleteItem, Document } from 'coc.nvim';
+import { terminate } from 'coc.nvim/util/processes';
+// @ts-ignore
+import completion from 'coc.nvim/completion';
+// @ts-ignore
+import workspace from 'coc.nvim/workspace';
+// @ts-ignore
+import Plugin from 'coc.nvim/plugin';
+import {
+  Buffer,
+  events,
+  VimCompleteItem,
+  Document,
+  OutputChannel,
+} from 'coc.nvim';
 
 // @ts-ignore
 global.__TEST__ = true;
+
+const nullChannel: OutputChannel = {
+  content: '',
+  show: () => {},
+  dispose: () => {},
+  name: 'null',
+  append: () => {},
+  appendLine: () => {},
+  clear: () => {},
+  hide: () => {},
+};
 
 process.on('uncaughtException', (err) => {
   const msg = `Uncaught exception: ${err.stack}`;
@@ -35,7 +58,7 @@ export class JestHelper extends EventEmitter {
   private _nvim?: Neovim;
   private _plugin?: Plugin;
 
-  public proc?: cp.ChildProcess;
+  public proc?: cp.ChildProcess | null;
 
   constructor(public testsDir: string) {
     super();
@@ -66,7 +89,11 @@ export class JestHelper extends EventEmitter {
 
   public boot() {
     beforeAll(async () => {
-      await this.setup();
+      try {
+        await this.setup();
+      } catch (e) {
+        console.error(e);
+      }
     });
 
     afterAll(async () => {
@@ -78,8 +105,21 @@ export class JestHelper extends EventEmitter {
     });
   }
 
+  public setupNvim(): void {
+    const vimrc = path.resolve(__dirname, 'vimrc');
+    const proc = (this.proc = cp.spawn(
+      process.env.COC_TEST_NVIM ?? 'nvim',
+      ['-u', vimrc, '-i', 'NONE', '--embed'],
+      {
+        cwd: __dirname,
+      },
+    ));
+    const plugin = attach({ proc });
+    this.nvim = plugin.nvim;
+  }
+
   public async setup(): Promise<void> {
-    const vimrcPath = pathLib.join(this.testsDir, 'vimrc');
+    const vimrcPath = path.join(this.testsDir, 'vimrc');
     const proc = (this.proc = cp.spawn(
       'nvim',
       ['-u', vimrcPath, '-i', 'NONE', '--embed'],
@@ -89,8 +129,8 @@ export class JestHelper extends EventEmitter {
     ));
     const plugin = (this.plugin = attach({ proc }));
     this.nvim = plugin.nvim as unknown as Neovim;
-    this.nvim.uiAttach(160, 80, {}).catch(() => {
-      // noop
+    this.nvim.uiAttach(160, 80, {}).catch((e) => {
+      console.error(e);
     });
     proc.on('exit', () => {
       this.proc = undefined;
@@ -100,6 +140,13 @@ export class JestHelper extends EventEmitter {
         for (const arg of args) {
           const event = arg[0];
           this.emit(event, arg.slice(1));
+          if (event == 'put') {
+            const arr = arg.slice(1).map((o) => o[0]);
+            const line = arr.join('').trim();
+            if (line.length > 3) {
+              // console.log(line)
+            }
+          }
         }
       }
     });
@@ -109,32 +156,43 @@ export class JestHelper extends EventEmitter {
   }
 
   public async shutdown(): Promise<void> {
-    this.plugin.dispose();
-    await this.nvim.quit();
+    if (this.plugin) this.plugin.dispose();
+    this.nvim.removeAllListeners();
+    this._nvim = undefined;
     if (this.proc) {
-      this.proc.kill('SIGKILL');
+      this.proc.unref();
+      terminate(this.proc);
+      this.proc = null;
     }
     await this.wait(60);
   }
 
+  public async triggerCompletion(source: string): Promise<void> {
+    await this.nvim.call('coc#start', { source });
+  }
+
   public async waitPopup(): Promise<void> {
+    const visible = await this.nvim.call('pumvisible');
+    if (visible) return;
+    // @ts-ignore
+    const res = await events.race(['MenuPopupChanged'], 2000);
+    if (!res) throw new Error('wait pum timeout after 2s');
+  }
+
+  public async waitPreviewWindow(): Promise<void> {
     for (let i = 0; i < 40; i++) {
       await this.wait(50);
-      const visible = await this.nvim.call('pumvisible');
-      if (visible) {
-        return;
-      }
+      const has = await this.nvim.call('coc#list#has_preview');
+      if (has > 0) return;
     }
     throw new Error('timeout after 2s');
   }
 
   public async waitFloat(): Promise<number> {
-    for (let i = 0; i < 40; i++) {
-      await this.wait(50);
-      const winid = await this.nvim.call('coc#util#get_float');
-      if (winid) {
-        return winid;
-      }
+    for (let i = 0; i < 50; i++) {
+      await this.wait(20);
+      const winid = await this.nvim.call('GetFloatWin');
+      if (winid) return winid;
     }
     throw new Error('timeout after 2s');
   }
@@ -143,14 +201,28 @@ export class JestHelper extends EventEmitter {
     await this.nvim.call('nvim_select_popupmenu_item', [idx, true, true, {}]);
   }
 
+  public async doAction(method: string, ...args: any[]): Promise<any> {
+    return await this.plugin.cocAction(method, ...args);
+  }
+
+  public async synchronize(): Promise<void> {
+    const doc = await workspace.document;
+    doc.forceSync();
+  }
+
   public async reset(): Promise<void> {
-    const mode = await this.nvim.call('mode');
-    if (mode !== 'n') {
-      await this.nvim.command('stopinsert');
+    const mode = await this.nvim.mode;
+    if (mode.blocking && mode.mode == 'r') {
+      await this.nvim.input('<cr>');
+    } else if (mode.mode != 'n' || mode.blocking) {
       await this.nvim.call('feedkeys', [String.fromCharCode(27), 'in']);
     }
+    completion.stop();
+    workspace.reset();
     await this.nvim.command('silent! %bwipeout!');
-    await this.wait(60);
+    await this.nvim.command('setl nopreviewwindow');
+    await this.wait(30);
+    await workspace.document;
   }
 
   public async pumvisible(): Promise<boolean> {
@@ -170,16 +242,12 @@ export class JestHelper extends EventEmitter {
     await this.waitPopup();
     const context = (await this.nvim.getVar('coc#_context')) as any;
     const items = context.candidates;
-    if (!items) {
-      return false;
-    }
-    const item = items.find((o: { word: string }) => o.word === word);
-    if (!item || !item.user_data) {
-      return false;
-    }
+    if (!items) return false;
+    const item = items.find((o) => o.word == word);
+    if (!item || !item.user_data) return false;
     try {
-      const o = JSON.parse(item.user_data);
-      if (source && o.source !== source) {
+      const arr = item.user_data.split(':', 2);
+      if (source && arr[0] !== source) {
         return false;
       }
     } catch (e) {
@@ -204,14 +272,13 @@ export class JestHelper extends EventEmitter {
   }
 
   public async edit(file?: string): Promise<Buffer> {
-    if (!file || !pathLib.isAbsolute(file)) {
-      file = pathLib.join(__dirname, file ? file : `${uuid()}`);
+    if (!file || !path.isAbsolute(file)) {
+      file = path.join(__dirname, file ? file : `${uuid()}`);
     }
-    const escaped: string = await this.nvim.call('fnameescape', file);
+    const escaped = (await this.nvim.call('fnameescape', file)) as string;
     await this.nvim.command(`edit ${escaped}`);
-    await this.wait(60);
-    const bufnr = (await this.nvim.call('bufnr', ['%'])) as number;
-    return this.nvim.createBuffer(bufnr);
+    const doc = await workspace.document;
+    return doc.buffer;
   }
 
   public async createDocument(name?: string): Promise<Document> {
@@ -221,6 +288,24 @@ export class JestHelper extends EventEmitter {
       return await workspace.document;
     }
     return doc;
+  }
+
+  public async listInput(input: string): Promise<void> {
+    // @ts-ignore
+    await events.fire('InputChar', ['list', input, 0]);
+  }
+
+  public async getMarkers(
+    bufnr: number,
+    ns: number,
+  ): Promise<[number, number, number][]> {
+    return (await this.nvim.call('nvim_buf_get_extmarks', [
+      bufnr,
+      ns,
+      0,
+      -1,
+      {},
+    ])) as [number, number, number][];
   }
 
   public async getCmdline(): Promise<string> {
@@ -235,9 +320,13 @@ export class JestHelper extends EventEmitter {
     return str.trim();
   }
 
-  public updateConfiguration(key: string, value: any): void {
-    const { configurations } = workspace as any;
+  public updateConfiguration(key: string, value: any): () => void {
+    const { configurations } = workspace;
+    const curr = workspace.getConfiguration(key);
     configurations.updateUserConfig({ [key]: value });
+    return () => {
+      configurations.updateUserConfig({ [key]: curr });
+    };
   }
 
   public async mockFunction(
@@ -246,7 +335,7 @@ export class JestHelper extends EventEmitter {
   ): Promise<void> {
     const content = `
     function! ${name}(...)
-      return ${JSON.stringify(result)}
+      return ${typeof result == 'number' ? result : JSON.stringify(result)}
     endfunction
     `;
     const file = await createTmpFile(content);
@@ -267,6 +356,12 @@ export class JestHelper extends EventEmitter {
     return res;
   }
 
+  public async getWinLines(winid: number): Promise<string[]> {
+    return (await this.nvim.eval(
+      `getbufline(winbufnr(${winid}), 1, '$')`,
+    )) as string[];
+  }
+
   public async getFloat(): Promise<Window | undefined> {
     const wins = await this.nvim.windows;
     let floatWin: Window | undefined;
@@ -278,18 +373,87 @@ export class JestHelper extends EventEmitter {
     }
     return floatWin;
   }
+
+  public async getFloats(): Promise<Window[]> {
+    const ids = await this.nvim.call('coc#float#get_float_win_list', []);
+    if (!ids) return [];
+    return ids.map((id) => this.nvim.createWindow(id));
+  }
+
+  public async getExtmarkers(
+    bufnr: number,
+    ns: number,
+  ): Promise<[number, number, number, number, string][]> {
+    const res = await this.nvim.call('nvim_buf_get_extmarks', [
+      bufnr,
+      ns,
+      0,
+      -1,
+      { details: true },
+    ]);
+    return res.map((o) => {
+      return [o[1], o[2], o[3].end_row, o[3].end_col, o[3].hl_group];
+    });
+  }
+
+  public async waitFor<T>(
+    method: string,
+    args: any[],
+    value: T,
+  ): Promise<void> {
+    let find = false;
+    for (let i = 0; i < 40; i++) {
+      await this.wait(50);
+      const res = (await this.nvim.call(method, args)) as T;
+      if (
+        res == value ||
+        (value instanceof RegExp && value.test((res as any).toString()))
+      ) {
+        find = true;
+        break;
+      }
+    }
+    if (!find) {
+      throw new Error(`waitFor ${value as unknown as string} timeout`);
+    }
+  }
+
+  public async waitValue<T>(fn: () => T, value: T): Promise<void> {
+    let find = false;
+    for (let i = 0; i < 40; i++) {
+      await this.wait(50);
+      const res = fn();
+      if (res == value) {
+        find = true;
+        break;
+      }
+    }
+    if (!find) {
+      throw new Error(`waitValue ${value as unknown as string} timeout`);
+    }
+  }
+
+  public createNullChannel(): OutputChannel {
+    return nullChannel;
+  }
 }
 
-async function createTmpFile(content: string): Promise<string> {
-  const tmpFolder = pathLib.join(os.tmpdir(), `coc-${process.pid}`);
+export function rmdir(dir: string): void {
+  if (typeof fs['rm'] === 'function') {
+    fs['rmSync'](dir, { recursive: true });
+  } else {
+    fs.rmdirSync(dir, { recursive: true });
+  }
+}
+
+export async function createTmpFile(content: string): Promise<string> {
+  const tmpFolder = path.join(os.tmpdir(), `coc-${process.pid}`);
   if (!fs.existsSync(tmpFolder)) {
     fs.mkdirSync(tmpFolder);
   }
-  const filename = pathLib.join(tmpFolder, uuid());
-  await util.promisify(fs.writeFile)(filename, content, 'utf8');
-  return filename;
+  const fsPath = path.join(tmpFolder, uuid());
+  await util.promisify(fs.writeFile)(fsPath, content, 'utf8');
+  return fsPath;
 }
 
-export const jestHelper = new JestHelper(
-  pathLib.join(__dirname, '../../tests'),
-);
+export const jestHelper = new JestHelper(path.join(__dirname, '../../tests'));
