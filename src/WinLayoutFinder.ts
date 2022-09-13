@@ -71,9 +71,10 @@ export class WinLayoutFinder {
    * @return Promise<WinLayoutFinder> instance
    */
   static async create(tabnr?: number) {
+    const args = tabnr ? [tabnr] : [];
     const root: WinLayoutFinder.VimNode = await workspace.nvim.call(
       'winlayout',
-      [tabnr],
+      args,
     );
     return new this(this.convertVimLayoutNode(root));
   }
