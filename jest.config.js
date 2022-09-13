@@ -1,4 +1,7 @@
 module.exports = {
+  globals: {
+    __TEST__: true,
+  },
   preset: 'ts-jest',
   testEnvironment: 'node',
   globalSetup: `${__dirname}/tests/jest-setup.js`,

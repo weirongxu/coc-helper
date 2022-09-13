@@ -1,4 +1,3 @@
 {
-  "suggest.timeout": 5000,
-  "tslint.enable": false
+  "suggest.timeout": 5000
 }
