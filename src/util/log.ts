@@ -70,8 +70,7 @@ export class HelperLogger implements Disposable {
     if (data instanceof Error) {
       this.appendLine(`${prefix}${data.stack ?? data.toString()}`);
 
-      // eslint-disable-next-line no-restricted-properties
-      window.showMessage(data.message, 'error');
+      void window.showErrorMessage(data.message);
       // this.outputChannel?.appendLine(data.stack ?? data.toString());
       if (isTest) {
         // eslint-disable-next-line no-console
@@ -83,8 +82,7 @@ export class HelperLogger implements Disposable {
     this.appendLine(`${prefix}${data}`);
 
     if (levelNum > levelErrorNum) {
-      // eslint-disable-next-line no-restricted-properties
-      window.showMessage(data, 'error');
+      void window.showErrorMessage(data);
       if (isTest) {
         // eslint-disable-next-line no-console
         console.error(data);
@@ -213,8 +211,9 @@ export class HelperLogger implements Disposable {
    */
   prettyPrint(...data: unknown[]) {
     this.info(prettyObject(...data));
-    // eslint-disable-next-line no-restricted-properties
-    window.showMessage(`[${formatDate(new Date())}] ${prettyObject(...data)}`);
+    void window.showErrorMessage(
+      `[${formatDate(new Date())}] ${prettyObject(...data)}`,
+    );
   }
 }
 

@@ -47,8 +47,7 @@ export async function activateHelper(
       'hi default link CocHelperNormalFloatNC CocHelperNormalFloat',
     );
   } catch (error) {
-    // eslint-disable-next-line no-restricted-properties
-    window.showMessage((error as Error).toString(), 'error');
+    void window.showErrorMessage((error as Error).toString());
   }
 }
 
@@ -59,8 +58,7 @@ export async function activate(context: ExtensionContext) {
   await activateHelper(context, { events: true });
 
   helperEvents.on('BufDelete', (bufnr) => {
-    // eslint-disable-next-line no-restricted-properties
-    window.showMessage(`buffer delete ${bufnr}`);
+    void window.showErrorMessage(`buffer delete ${bufnr}`);
   });
 
   await helperLogger.measureTask(async () => {
