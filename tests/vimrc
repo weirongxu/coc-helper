@@ -19,3 +19,4 @@ let g:coc_node_env = 'test'
 autocmd BufNewFile,BufRead *.ts set filetype=typescript
 
 execute 'set runtimepath+=,'.s:dir.'/coc.nvim'
+execute 'set runtimepath+=,'.$EXTENSION_ROOT_PATH

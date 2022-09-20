@@ -112,6 +112,9 @@ export class JestHelper extends EventEmitter {
       ['-u', vimrc, '-i', 'NONE', '--embed'],
       {
         cwd: __dirname,
+        env: {
+          EXTENSION_ROOT_PATH: process.cwd(),
+        },
       },
     ));
     const plugin = attach({ proc });
@@ -125,6 +128,9 @@ export class JestHelper extends EventEmitter {
       ['-u', vimrcPath, '-i', 'NONE', '--embed'],
       {
         cwd: this.testsDir,
+        env: {
+          EXTENSION_ROOT_PATH: process.cwd(),
+        },
       },
     ));
     const plugin = (this.plugin = attach({ proc }));
