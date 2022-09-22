@@ -113,7 +113,7 @@ export class JestHelper extends EventEmitter {
       {
         cwd: __dirname,
         env: {
-          EXTENSION_ROOT_PATH: process.cwd(),
+          __EXTENSION_ROOT_PATH__: process.cwd(),
         },
       },
     ));
@@ -129,7 +129,8 @@ export class JestHelper extends EventEmitter {
       {
         cwd: this.testsDir,
         env: {
-          EXTENSION_ROOT_PATH: process.cwd(),
+          ...process.env,
+          __EXTENSION_ROOT_PATH__: process.cwd(),
         },
       },
     ));
