@@ -1,4 +1,5 @@
 const globalModuleIdSym = Symbol('helper_module_max_id');
+
 /**
  * Unique module id by key
  */

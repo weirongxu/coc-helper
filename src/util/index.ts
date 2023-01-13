@@ -4,6 +4,7 @@ export * from './env';
 export * from './log';
 export * from './text';
 export * from './version';
+export * from './vim';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => {

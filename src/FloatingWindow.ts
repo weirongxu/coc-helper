@@ -117,6 +117,9 @@ export namespace FloatingWindow {
   }
 }
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export class FloatingWindow implements Disposable {
   static modePresets: Record<
     FloatingWindow.Mode,
