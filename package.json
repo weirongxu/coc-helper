@@ -9,7 +9,8 @@
   "author": "Weirong Xu <weirongxu.raidou@gmail.com>",
   "license": "MIT",
   "files": [
-    "lib"
+    "lib",
+    "jest.config.js"
   ],
   "scripts": {
     "clean": "shx rm -rf lib",
