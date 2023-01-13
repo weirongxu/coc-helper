@@ -10,7 +10,8 @@
   "license": "MIT",
   "files": [
     "lib",
-    "jest.config.js"
+    "jest.config.js",
+    "tests"
   ],
   "scripts": {
     "clean": "shx rm -rf lib",
