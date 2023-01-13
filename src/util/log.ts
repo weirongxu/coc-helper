@@ -1,4 +1,5 @@
-import { OutputChannel, window, Disposable } from 'coc.nvim';
+import type { OutputChannel, Disposable } from 'coc.nvim';
+import { window } from 'coc.nvim';
 import util from 'util';
 import { isTest } from './env';
 

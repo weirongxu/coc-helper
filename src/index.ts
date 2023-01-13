@@ -1,11 +1,5 @@
-import {
-  commands,
-  events,
-  ExtensionContext,
-  window,
-  workspace,
-} from 'coc.nvim';
-import { helperEvents, helperVimEvents } from './events';
+import type { ExtensionContext } from 'coc.nvim';
+import { commands, events, window, workspace } from 'coc.nvim';
 import { FloatingWindow } from './FloatingWindow';
 import { MultiFloatingWindow } from './MultiFloatingWindow';
 import { displayHeight, helperLogger, sleep } from './util';
@@ -29,19 +23,10 @@ export async function activateHelper(
      * @default true
      */
     vimModule?: boolean;
-    /**
-     * activate helperVimEvents and helperEvents
-     * @default true
-     * @deprecated It will cause exception when CocRestart
-     */
-    events?: boolean;
   } = {},
 ) {
-  if (options.vimModule ?? options.events ?? true) {
+  if (options.vimModule ?? true) {
     await VimModule.init(context);
-  }
-  if (options.events ?? true) {
-    await helperVimEvents.register(context);
   }
   try {
     await workspace.nvim.command(
@@ -56,11 +41,7 @@ export async function activateHelper(
  * Test
  */
 export async function activate(context: ExtensionContext) {
-  await activateHelper(context, { events: true });
-
-  helperEvents.on('BufDelete', (bufnr) => {
-    void window.showErrorMessage(`buffer delete ${bufnr}`);
-  });
+  await activateHelper(context);
 
   await helperLogger.measureTask(async () => {
     await workspace.nvim.command(

@@ -1,5 +1,6 @@
-import { Buffer, BufferHighlight, Range, workspace } from 'coc.nvim';
-import { FloatingWindow } from './FloatingWindow';
+import type { Buffer, BufferHighlight } from 'coc.nvim';
+import { Range, workspace } from 'coc.nvim';
+import type { FloatingWindow } from './FloatingWindow';
 import { utilModule } from './modules/util';
 import { Notifier } from './notifier';
 import { displayWidth } from './util';
@@ -9,6 +10,9 @@ const defaultWinHl = 'CocHelperNormalFloat';
 const defaultWinHlNC = 'CocHelperNormalFloatNC';
 const defaultBorderWinHl = 'CocHelperNormalFloatBorder';
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export namespace FloatingUtil {
   export type Edges = [
     top: number,
@@ -67,6 +71,9 @@ export namespace FloatingUtil {
   };
 }
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export class FloatingUtil {
   constructor(protected srcId: string) {}
 

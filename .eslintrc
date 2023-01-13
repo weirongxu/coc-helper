@@ -3,5 +3,8 @@
   "env": {
     "node": true
   },
-  "extends": ["@raidou/eslint-config-base"]
+  "extends": ["@raidou/eslint-config-base"],
+  "rules": {
+    "@typescript-eslint/consistent-type-imports": "error"
+  }
 }

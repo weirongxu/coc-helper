@@ -1,7 +1,10 @@
 import { VimModule } from '../VimModule';
 import { workspace } from 'coc.nvim';
-import { FloatingUtil } from '../FloatingUtil';
+import type { FloatingUtil } from '../FloatingUtil';
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export const utilModule = VimModule.create('util', (m) => {
   const isNvim = workspace.isNvim;
 

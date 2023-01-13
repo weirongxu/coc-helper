@@ -1,4 +1,5 @@
-import { ExtensionContext, workspace } from 'coc.nvim';
+import type { ExtensionContext } from 'coc.nvim';
+import { workspace } from 'coc.nvim';
 import { Notifier } from './notifier';
 import { helperLogger, versionName } from './util';
 import { getModuleId } from './util/module';
@@ -13,6 +14,9 @@ function filterLineCont(content: string) {
   return content.replace(/\n\s*\\/g, '');
 }
 
+/**
+ * @deprecated Because VimModule will make the code difficult to debug
+ */
 export namespace VimModule {
   export type InitQueueFn = (context: ExtensionContext) => void | Promise<void>;
 
@@ -36,6 +40,9 @@ export namespace VimModule {
   export type Context = { name: string };
 }
 
+/**
+ * @deprecated Because VimModule will make the code difficult to debug
+ */
 export class VimModule {
   static inited = false;
 

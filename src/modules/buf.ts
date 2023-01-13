@@ -1,6 +1,9 @@
 import { VimModule } from '../VimModule';
 import { workspace } from 'coc.nvim';
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export const bufModule = VimModule.create('buf', (m) => {
   const isNvim = workspace.isNvim;
 

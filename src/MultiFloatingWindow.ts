@@ -1,4 +1,5 @@
-import { Disposable, disposeAll, events, Neovim, workspace } from 'coc.nvim';
+import type { Neovim } from 'coc.nvim';
+import { Disposable, disposeAll, events, workspace } from 'coc.nvim';
 import { Notifier } from '.';
 import { FloatingUtil } from './FloatingUtil';
 import { FloatingWindow } from './FloatingWindow';

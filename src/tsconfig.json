@@ -12,7 +12,11 @@
     "noImplicitAny": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "stripInternal": true
+    "stripInternal": true,
+    "importsNotUsedAsValues": "error",
+    "paths": {
+      "coc.nvim/*": ["../tests/coc.nvim/"]
+    }
   },
   "include": ["."]
 }

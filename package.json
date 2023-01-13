@@ -9,11 +9,7 @@
   "author": "Weirong Xu <weirongxu.raidou@gmail.com>",
   "license": "MIT",
   "files": [
-    "lib",
-    "tests",
-    "jest.config.js",
-    "JestHelper.js",
-    "JestHelper.d.ts"
+    "lib"
   ],
   "scripts": {
     "clean": "shx rm -rf lib",
@@ -22,9 +18,8 @@
     "build:cjs": "tsc -p ./tsconfig.prod.json --module commonjs --outDir lib/cjs",
     "build": "run-s clean copy:pkg build:esm build:cjs",
     "lint": "eslint src --ext ts",
-    "setup:test-env": "node ./tests/setup.js",
-    "prepare": "run-s clean setup:test-env build",
-    "unittest": "jest --runInBand --detectOpenHandles --forceExit",
+    "prepare": "run-s clean build",
+    "unittest": "jest",
     "test": "run-s copy:pkg lint unittest"
   },
   "engines": {

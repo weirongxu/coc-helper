@@ -1,4 +1,5 @@
-import { MapMode, workspace } from 'coc.nvim';
+import type { MapMode } from 'coc.nvim';
+import { workspace } from 'coc.nvim';
 import { sum } from './collection';
 import { isWindows } from './env';
 

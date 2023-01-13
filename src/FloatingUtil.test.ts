@@ -1,7 +1,4 @@
-import { jestHelper } from './jest/JestHelper';
 import { FloatingUtil } from './FloatingUtil';
-
-jestHelper.boot();
 
 function getFloatUtil(): FloatingUtil {
   return new FloatingUtil('coc-helper');

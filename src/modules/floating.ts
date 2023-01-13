@@ -1,8 +1,11 @@
 import { workspace } from 'coc.nvim';
-import { FloatingUtil } from '../FloatingUtil';
+import type { FloatingUtil } from '../FloatingUtil';
 import { VimModule } from '../VimModule';
 import { bufModule } from './buf';
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export const floatingModule = VimModule.create('float', (m) => {
   type VimWinConfig = FloatingUtil.VimWinConfig;
   type NvimWinConfig = FloatingUtil.NvimWinConfig;

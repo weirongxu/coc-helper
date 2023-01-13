@@ -1,17 +1,14 @@
-import {
-  Buffer,
-  BufferHighlight,
-  Disposable,
-  disposeAll,
-  events,
-  workspace,
-} from 'coc.nvim';
+import type { Buffer, BufferHighlight, Disposable } from 'coc.nvim';
+import { disposeAll, events, workspace } from 'coc.nvim';
 import { Notifier } from './notifier';
 import { floatingModule } from './modules/floating';
 import { utilModule } from './modules/util';
 import { helperLogger } from './util';
 import { FloatingUtil } from './FloatingUtil';
 
+/**
+ * @deprecated Because VimModule deprecated
+ */
 export namespace FloatingWindow {
   export type Mode = 'default' | 'base' | 'show';
   export type CreateInitedExecute = (context: { bufnr: string }) => string;
