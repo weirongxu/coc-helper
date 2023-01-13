@@ -15,7 +15,7 @@ const levelList = [
 ] as const;
 const levelErrorNum = levelList.indexOf('error');
 
-type LevelStatus = typeof levelList[number];
+type LevelStatus = (typeof levelList)[number];
 type LevelLog = Exclude<LevelStatus, 'off'>;
 
 function formatDate(date: Date) {
