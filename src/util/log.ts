@@ -156,12 +156,12 @@ export class HelperLogger implements Disposable {
     | Promise<[taskResult: T, milliseconds: number]> {
     const time = new Date().valueOf();
     const result = task();
-    if (!('then' in result)) {
-      return [result, new Date().valueOf() - time];
+    if (result instanceof Promise) {
+      return result.then((r) => {
+        return [r, new Date().valueOf() - time];
+      });
     }
-    return result.then((r) => {
-      return [r, new Date().valueOf() - time];
-    });
+    return [result, new Date().valueOf() - time];
   }
 
   /**

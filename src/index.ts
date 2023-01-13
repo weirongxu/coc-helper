@@ -32,6 +32,7 @@ export async function activateHelper(
     /**
      * activate helperVimEvents and helperEvents
      * @default true
+     * @deprecated It will cause exception when CocRestart
      */
     events?: boolean;
   } = {},

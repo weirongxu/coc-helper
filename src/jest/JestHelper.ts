@@ -189,7 +189,7 @@ export class JestHelper extends EventEmitter {
   public async waitPreviewWindow(): Promise<void> {
     for (let i = 0; i < 40; i++) {
       await this.wait(50);
-      const has = await this.nvim.call('coc#list#has_preview');
+      const has = (await this.nvim.call('coc#list#has_preview')) as number;
       if (has > 0) return;
     }
     throw new Error('timeout after 2s');
@@ -198,7 +198,7 @@ export class JestHelper extends EventEmitter {
   public async waitFloat(): Promise<number> {
     for (let i = 0; i < 50; i++) {
       await this.wait(20);
-      const winid = await this.nvim.call('GetFloatWin');
+      const winid = (await this.nvim.call('GetFloatWin')) as number;
       if (winid) return winid;
     }
     throw new Error('timeout after 2s');
@@ -318,7 +318,7 @@ export class JestHelper extends EventEmitter {
   public async getCmdline(): Promise<string> {
     let str = '';
     for (let i = 1, l = 70; i < l; i++) {
-      const ch = await this.nvim.call('screenchar', [79, i]);
+      const ch = (await this.nvim.call('screenchar', [79, i])) as number;
       if (ch === -1) {
         break;
       }
@@ -357,7 +357,7 @@ export class JestHelper extends EventEmitter {
   public async screenLine(line: number): Promise<string> {
     let res = '';
     for (let i = 1; i <= 80; i++) {
-      const ch = await this.nvim.call('screenchar', [line, i]);
+      const ch = (await this.nvim.call('screenchar', [line, i])) as number;
       res = res + String.fromCharCode(ch);
     }
     return res;
@@ -382,7 +382,10 @@ export class JestHelper extends EventEmitter {
   }
 
   public async getFloats(): Promise<Window[]> {
-    const ids = await this.nvim.call('coc#float#get_float_win_list', []);
+    const ids = (await this.nvim.call(
+      'coc#float#get_float_win_list',
+      [],
+    )) as number[];
     if (!ids) return [];
     return ids.map((id) => this.nvim.createWindow(id));
   }
@@ -391,13 +394,13 @@ export class JestHelper extends EventEmitter {
     bufnr: number,
     ns: number,
   ): Promise<[number, number, number, number, string][]> {
-    const res = await this.nvim.call('nvim_buf_get_extmarks', [
+    const res = (await this.nvim.call('nvim_buf_get_extmarks', [
       bufnr,
       ns,
       0,
       -1,
       { details: true },
-    ]);
+    ])) as any[];
     return res.map((o) => {
       return [o[1], o[2], o[3].end_row, o[3].end_col, o[3].hl_group];
     });

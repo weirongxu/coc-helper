@@ -11,7 +11,8 @@
     "moduleResolution": "node",
     "noImplicitAny": false,
     "skipLibCheck": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "stripInternal": true
   },
   "include": ["."]
 }

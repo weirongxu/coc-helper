@@ -31,7 +31,7 @@ export namespace FloatingWindow {
     borderInitedExecute?: CreateInitedExecute;
   };
 
-  export type OpenOptions = {
+  export type BaseOpenOptions = {
     /**
      * Relative position
      * @default 'editor'
@@ -55,8 +55,6 @@ export namespace FloatingWindow {
      * @default 0
      */
     leftOffset?: number;
-    width: number;
-    height: number;
     /**
      * Vim only
      */
@@ -115,6 +113,11 @@ export namespace FloatingWindow {
     borderInitedExecute?: OpenInitedExecute;
     context?: FloatingUtil.Context;
   };
+
+  export interface OpenOptions extends BaseOpenOptions {
+    width: number;
+    height: number;
+  }
 }
 
 export class FloatingWindow implements Disposable {

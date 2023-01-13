@@ -1,20 +1,16 @@
 import { Disposable, disposeAll, events, Neovim, workspace } from 'coc.nvim';
-import { Merge } from 'type-fest';
 import { Notifier } from '.';
 import { FloatingUtil } from './FloatingUtil';
 import { FloatingWindow } from './FloatingWindow';
 
 export namespace MultiFloatingWindow {
-  export type CreateOptions<WinKeys extends string = string> = Merge<
-    FloatingWindow.CreateOptions,
-    {
+  export type CreateOptions<WinKeys extends string = string> =
+    FloatingWindow.CreateOptions & {
       wins: Record<WinKeys, FloatingWindow.CreateOptions>;
-    }
-  >;
+    };
 
-  export type OpenOptions<WinKeys extends string = string> = Merge<
-    FloatingWindow.OpenOptions,
-    {
+  export type OpenOptions<WinKeys extends string = string> =
+    FloatingWindow.BaseOpenOptions & {
       /**
        * @default width by 'wins'
        */
@@ -24,8 +20,7 @@ export namespace MultiFloatingWindow {
        */
       height?: number;
       wins: Partial<Record<WinKeys, FloatingWindow.OpenOptions>>;
-    }
-  >;
+    };
 }
 
 export class MultiFloatingWindow<WinKeys extends string = string>

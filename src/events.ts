@@ -109,6 +109,8 @@ export class HelperEventEmitter<Events extends Record<string, any>> {
 }
 
 /**
+ * @deprecated It will cause exception when CocRestart
+ *
  * Support more vim events
  *
  * @example
@@ -196,6 +198,9 @@ export class HelperVimEvents<
   }
 }
 
+/*
+ * @deprecated It will cause exception when CocRestart
+ */
 export const helperVimEvents = new HelperVimEvents<{
   BufDelete: HelperEventEmitter.BufEventListener;
   BufWipeout: HelperEventEmitter.BufEventListener;

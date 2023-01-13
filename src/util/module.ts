@@ -1,9 +1,15 @@
-const globalModuleIdKey = '__coc_helper_module_max_id';
+const globalModuleIdSym = Symbol('helper_module_max_id');
+/**
+ * Unique module id by key
+ */
 export function getModuleId(key: string): number {
-  const globalKey = `${globalModuleIdKey}_${key}`;
-  if (!(globalKey in global)) {
-    global[globalKey] = 0;
+  if (!(globalModuleIdSym in global)) {
+    global[globalModuleIdSym] = {};
   }
-  global[globalKey] += 1;
-  return global[globalKey];
+  const moduleIds: Record<string, number> = global[globalModuleIdSym];
+  if (!(key in moduleIds)) {
+    moduleIds[key] = 0;
+  }
+  moduleIds[key] += 1;
+  return moduleIds[key];
 }

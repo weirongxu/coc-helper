@@ -66,18 +66,18 @@ export const utilModule = VimModule.create('util', (m) => {
     runCocCmd: m.fn<[name: string, ...args: unknown[]], unknown>(
       'run_coc_cmd',
       ({ name }) => `
-      function! ${name}(name, ...) abort
-        return call('CocAction', extend(['runCommand', a:name], a:000))
-      endfunction
-    `,
+        function! ${name}(name, ...) abort
+          return call('CocAction', extend(['runCommand', a:name], a:000))
+        endfunction
+      `,
     ),
     runCocCmdAsync: m.fn<[name: string, ...args: unknown[]], unknown>(
       'run_coc_cmd_async',
       ({ name }) => `
-      function! ${name}(name, ...) abort
-        return call('CocActionAsync', extend(['runCommand', a:name], a:000))
-      endfunction
-    `,
+        function! ${name}(name, ...) abort
+          return call('CocActionAsync', extend(['runCommand', a:name], a:000))
+        endfunction
+      `,
     ),
   };
 });
