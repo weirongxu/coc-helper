@@ -60,6 +60,14 @@ export class HelperLogger implements Disposable {
     this.outputChannel.appendLine(line);
   };
 
+  appendErrorLine = (line: string) => {
+    if (isTest) {
+      console.error(line);
+    } else {
+      void window.showErrorMessage(line);
+    }
+  };
+
   log = (levelName: LevelLog, data: string | Error) => {
     const levelNum: number = levelList[levelName];
     if (levelNum < this.levelNumber) {
@@ -71,10 +79,9 @@ export class HelperLogger implements Disposable {
     if (data instanceof Error) {
       this.appendLine(`${prefix}${data.stack ?? data.toString()}`);
 
-      void window.showErrorMessage(data.message);
+      this.appendErrorLine(data.message);
       // this.outputChannel?.appendLine(data.stack ?? data.toString());
       if (isTest) {
-        // eslint-disable-next-line no-console
         console.error(data.stack ?? data.toString());
       }
       return;
@@ -83,7 +90,7 @@ export class HelperLogger implements Disposable {
     this.appendLine(`${prefix}${data}`);
 
     if (levelNum > levelErrorNum) {
-      void window.showErrorMessage(data);
+      this.appendErrorLine(data);
       if (isTest) {
         // eslint-disable-next-line no-console
         console.error(data);
@@ -210,12 +217,12 @@ export class HelperLogger implements Disposable {
   /**
    * Print data to outputChannel and vim message
    */
-  prettyPrint(...data: unknown[]) {
+  prettyPrint = (...data: unknown[]) => {
     this.info(prettyObject(...data));
-    void window.showErrorMessage(
+    this.appendErrorLine(
       `[${formatDate(new Date())}] ${prettyObject(...data)}`,
     );
-  }
+  };
 }
 
 export const helperLogger = new HelperLogger('coc-helper');
