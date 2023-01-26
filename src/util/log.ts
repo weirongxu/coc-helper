@@ -80,7 +80,6 @@ export class HelperLogger implements Disposable {
       this.appendLine(`${prefix}${data.stack ?? data.toString()}`);
 
       this.appendErrorLine(data.message);
-      // this.outputChannel?.appendLine(data.stack ?? data.toString());
       if (isTest) {
         console.error(data.stack ?? data.toString());
       }
@@ -91,10 +90,6 @@ export class HelperLogger implements Disposable {
 
     if (levelNum > levelErrorNum) {
       this.appendErrorLine(data);
-      if (isTest) {
-        // eslint-disable-next-line no-console
-        console.error(data);
-      }
     }
   };
 
